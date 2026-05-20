@@ -15,4 +15,3 @@ func InitializeDB(cfg config.Config) (*sql.DB, error) {
 
 	return db, nil
 }
-
