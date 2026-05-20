@@ -1,0 +1,2 @@
+// Package model — definisi struct/entity untuk semua tabel database
+package model

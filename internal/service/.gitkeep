@@ -1,0 +1,2 @@
+// Package service — berisi business logic dan aturan aplikasi
+package service

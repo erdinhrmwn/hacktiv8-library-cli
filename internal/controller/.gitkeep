@@ -1,0 +1,2 @@
+// Package controller — menangani input/output CLI, menu navigasi, dan validasi input pengguna
+package controller

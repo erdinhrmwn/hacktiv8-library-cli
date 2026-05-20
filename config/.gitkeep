@@ -1,0 +1,2 @@
+// Package config — memuat dan mengelola konfigurasi dari .env
+package config
