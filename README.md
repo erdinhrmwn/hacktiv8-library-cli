@@ -48,8 +48,8 @@ Aplikasi menggunakan **7 tabel** utama:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/username/library-cli.git
-cd library-cli
+git clone https://github.com/erdinhrmwn/hacktiv8-library-cli.git
+cd hacktiv8-library-cli
 ```
 
 ### 2. Setup Database
