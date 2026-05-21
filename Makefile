@@ -9,7 +9,7 @@ BUILD_DIR  := ./bin
 
 run: build
 	@echo "🚀 Running $(APP_NAME)..."
-	$(BUILD_DIR)/$(APP_NAME)
+	@$(BUILD_DIR)/$(APP_NAME)
 
 build: tidy
 	@echo "🔨 Building $(APP_NAME)..."
