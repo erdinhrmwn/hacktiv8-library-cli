@@ -77,7 +77,7 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 			}
 
 			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Judul", "Genre", "Stock"})
+			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock"})
 			for _, book := range books {
 				t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock})
 			}
@@ -97,7 +97,7 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 			}
 
 			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Judul", "Genre", "Stock"})
+			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock"})
 			for _, book := range books {
 				t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock})
 			}
@@ -124,7 +124,7 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 			}
 
 			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Judul", "Genre", "Stock", "Author Name", "Author Nationality"})
+			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock", "Author Name", "Author Nationality"})
 			t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock, book.Author.Name, book.Author.Nationality})
 			t.Render()
 		case "Kembali ke Dashboard":
