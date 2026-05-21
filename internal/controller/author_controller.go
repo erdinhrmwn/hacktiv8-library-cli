@@ -35,34 +35,49 @@ func (c *AuthorController) SearchAuthor(ctx context.Context, query string) ([]mo
 	return c.authorService.SearchAuthor(ctx, query)
 }
 
-func (c *AuthorController) AddAuthor(ctx context.Context, name, birthDate, nationality, bio string) error {
-	if strings.TrimSpace(name) == "" {
+type AddAuthorInput struct {
+	Name        string
+	BirthDate   string
+	Nationality string
+	Bio         string
+}
+
+func (c *AuthorController) AddAuthor(ctx context.Context, input AddAuthorInput) error {
+	if strings.TrimSpace(input.Name) == "" {
 		return fmt.Errorf("nama penulis tidak boleh kosong")
 	}
 
 	author := &model.Author{
-		Name:        strings.TrimSpace(name),
-		BirthDate:   birthDate,
-		Nationality: nationality,
-		Bio:         bio,
+		Name:        strings.TrimSpace(input.Name),
+		BirthDate:   input.BirthDate,
+		Nationality: input.Nationality,
+		Bio:         input.Bio,
 	}
 	return c.authorService.AddAuthor(ctx, author)
 }
 
-func (c *AuthorController) UpdateAuthor(ctx context.Context, id int, name, birthDate, nationality, bio string) error {
-	if id <= 0 {
+type UpdateAuthorInput struct {
+	ID          int
+	Name        string
+	BirthDate   string
+	Nationality string
+	Bio         string
+}
+
+func (c *AuthorController) UpdateAuthor(ctx context.Context, input UpdateAuthorInput) error {
+	if input.ID <= 0 {
 		return fmt.Errorf("ID penulis tidak valid")
 	}
-	if strings.TrimSpace(name) == "" {
+	if strings.TrimSpace(input.Name) == "" {
 		return fmt.Errorf("nama penulis tidak boleh kosong")
 	}
 
 	author := &model.Author{
-		ID:          id,
-		Name:        strings.TrimSpace(name),
-		BirthDate:   birthDate,
-		Nationality: nationality,
-		Bio:         bio,
+		ID:          input.ID,
+		Name:        strings.TrimSpace(input.Name),
+		BirthDate:   input.BirthDate,
+		Nationality: input.Nationality,
+		Bio:         input.Bio,
 	}
 	return c.authorService.UpdateAuthor(ctx, author)
 }

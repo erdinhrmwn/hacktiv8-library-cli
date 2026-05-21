@@ -16,7 +16,6 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-
 	cfg := config.InitConfig()
 
 	db, err := database.InitializeDB(cfg)

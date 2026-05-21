@@ -33,9 +33,17 @@ func New(db *sql.DB) *Container {
 	bookController := controller.NewBookController(bookService)
 
 	return &Container{
-		AuthMenu:    &AuthMenu{authController: authController},
-		VisitorMenu: &VisitorMenu{authorController: authorController, bookController: bookController},
-		StaffMenu:   &StaffMenu{},
+		AuthMenu: &AuthMenu{
+			authController: authController,
+		},
+		VisitorMenu: &VisitorMenu{
+			authorController: authorController,
+			bookController:   bookController,
+		},
+		StaffMenu: &StaffMenu{
+			authorController: authorController,
+			bookController:   bookController,
+		},
 	}
 }
 

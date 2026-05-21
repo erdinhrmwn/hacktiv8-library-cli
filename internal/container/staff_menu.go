@@ -3,11 +3,20 @@ package container
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/controller"
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
+	"github.com/erdinhrmwn/hacktiv8-library-cli/utils"
 	"github.com/manifoldco/promptui"
+	"github.com/olekukonko/tablewriter"
 )
 
-type StaffMenu struct{}
+type StaffMenu struct {
+	authorController *controller.AuthorController
+	bookController   *controller.BookController
+}
 
 func (m *StaffMenu) Dashboard(ctx context.Context) {
 	for {
@@ -99,15 +108,201 @@ func (m *StaffMenu) Catalog(ctx context.Context) {
 
 		switch sel {
 		case "Tambah Buku Baru":
-			fmt.Printf("\n🚧 Tambah Buku Baru — coming soon\n\n")
+			var bookInput model.Book
+
+			// ISBN Input
+			isbnPrompt, err := utils.AskInput("ISBN")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+			bookInput.ISBN = isbnPrompt
+
+			// Title Input
+			titlePrompt, err := utils.AskInput("Title")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+			bookInput.Title = titlePrompt
+
+			// Author ID Input
+			authorIDPrompt, err := utils.AskInput("Author ID")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+			bookInput.AuthorID, err = strconv.Atoi(authorIDPrompt)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+
+			// Genre Input
+			_, genrePrompt, err := utils.SelectInput("Genre", []string{
+				"Horror",
+				"Sci-Fi",
+				"Comedy",
+				"Romance",
+				"Slice of Life",
+			})
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+			bookInput.Genre = genrePrompt
+
+			// Stock Input
+			stockPrompt, err := utils.AskInput("Stock")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+			bookInput.Stock, err = strconv.Atoi(stockPrompt)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+
+			// Save Book
+			err = m.bookController.AddBook(ctx, controller.AddBookInput{
+				ISBN:     bookInput.ISBN,
+				Title:    bookInput.Title,
+				Genre:    bookInput.Genre,
+				AuthorID: bookInput.AuthorID,
+				Stock:    bookInput.Stock,
+			})
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
+				return
+			}
+			fmt.Printf("\n✅ Buku berhasil ditambahkan\n\n")
 		case "Update Stok Buku":
-			fmt.Printf("\n🚧 Update Stok Buku — coming soon\n\n")
+			books, err := m.bookController.GetAllBooks(ctx)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal mengambil daftar buku: %v\n\n", err)
+				return
+			}
+
+			bookTitles := make([]string, 0, len(books))
+			for _, book := range books {
+				bookTitles = append(bookTitles, book.Title)
+			}
+
+			selectIndex, _, err := utils.SelectInput("Pilih Buku", bookTitles)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal memilih buku: %v\n\n", err)
+				return
+			}
+			selectedBook := books[selectIndex]
+
+			fmt.Printf("\n✅ Buku yang dipilih: %s\n\n", selectedBook.Title)
+
+			newStock, err := utils.AskInput("Stok Baru")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal mengubah stok buku: %v\n\n", err)
+				return
+			}
+			selectedBook.Stock, err = strconv.Atoi(newStock)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal mengubah stok buku: %v\n\n", err)
+				return
+			}
+
+			err = m.bookController.UpdateBook(ctx, controller.UpdateBookInput{
+				ID:       selectedBook.ID,
+				Stock:    selectedBook.Stock,
+				ISBN:     selectedBook.ISBN,
+				Title:    selectedBook.Title,
+				Genre:    selectedBook.Genre,
+				AuthorID: selectedBook.AuthorID,
+			})
+			if err != nil {
+				fmt.Printf("\n❌ Gagal mengubah stok buku: %v\n\n", err)
+				return
+			}
+
+			fmt.Printf("\n✅ Stok buku berhasil diubah: %s (stok: %d)\n\n", selectedBook.Title, selectedBook.Stock)
 		case "Hapus Buku":
-			fmt.Printf("\n🚧 Hapus Buku — coming soon\n\n")
+			books, err := m.bookController.GetAllBooks(ctx)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal mengambil daftar buku: %v\n\n", err)
+				return
+			}
+
+			bookTitles := make([]string, 0, len(books))
+			for _, book := range books {
+				bookTitles = append(bookTitles, book.Title)
+			}
+
+			selectIndex, _, err := utils.SelectInput("Pilih Buku", bookTitles)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal memilih buku: %v\n\n", err)
+				return
+			}
+			selectedBook := books[selectIndex]
+
+			err = m.bookController.DeleteBook(ctx, selectedBook.ID)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menghapus buku: %v\n\n", err)
+				return
+			}
+
+			fmt.Printf("\n✅ Buku berhasil dihapus: %s\n\n", selectedBook.Title)
 		case "Tambah Penulis Baru":
-			fmt.Printf("\n🚧 Tambah Penulis Baru — coming soon\n\n")
+			var author model.Author
+			namePrompt, err := utils.AskInput("Name")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambah penulis: %v\n\n", err)
+				return
+			}
+			author.Name = namePrompt
+
+			birthDatePrompt, err := utils.AskInput("BirthDate")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambah penulis: %v\n\n", err)
+				return
+			}
+			author.BirthDate = birthDatePrompt
+
+			nationalityPrompt, err := utils.AskInput("Nationality")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambah penulis: %v\n\n", err)
+				return
+			}
+			author.Nationality = nationalityPrompt
+
+			bioPrompt, err := utils.AskInput("Bio")
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambah penulis: %v\n\n", err)
+				return
+			}
+			author.Bio = bioPrompt
+
+			err = m.authorController.AddAuthor(ctx, controller.AddAuthorInput{
+				Name:        author.Name,
+				BirthDate:   author.BirthDate,
+				Nationality: author.Nationality,
+				Bio:         author.Bio,
+			})
+			if err != nil {
+				fmt.Printf("\n❌ Gagal menambah penulis: %v\n\n", err)
+				return
+			}
+			fmt.Printf("\n✅ Penulis berhasil ditambahkan\n\n")
 		case "Lihat Daftar Penulis":
-			fmt.Printf("\n🚧 Lihat Daftar Penulis — coming soon\n\n")
+			authors, err := m.authorController.GetAllAuthors(ctx)
+			if err != nil {
+				fmt.Printf("\n❌ Gagal melihat daftar penulis: %v\n\n", err)
+				return
+			}
+
+			t := tablewriter.NewWriter(os.Stdout)
+			t.Header([]string{"ID", "Name", "BirthDate", "Nationality"})
+			for _, author := range authors {
+				t.Append([]any{author.ID, author.Name, author.BirthDate, author.Nationality})
+			}
+			t.Render()
 		case "Kembali ke Dashboard":
 			return
 		}

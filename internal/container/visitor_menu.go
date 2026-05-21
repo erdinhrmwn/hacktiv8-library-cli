@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,9 +12,9 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-type VisitorMenu struct{
+type VisitorMenu struct {
 	authorController *controller.AuthorController
-	bookController *controller.BookController
+	bookController   *controller.BookController
 }
 
 func (m *VisitorMenu) Dashboard(ctx context.Context) {
@@ -105,6 +106,14 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 		case "Lihat Detail Buku & Penulis (Berdasarkan ID)":
 			prompt := promptui.Prompt{
 				Label: "Masukkan ID buku",
+				Validate: func(s string) error {
+					_, err := strconv.Atoi(s)
+					if err != nil {
+						return errors.New("Invalid number")
+					}
+
+					return nil
+				},
 			}
 			bookPrompt, err := prompt.Run()
 			if err != nil {

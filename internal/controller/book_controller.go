@@ -35,51 +35,68 @@ func (c *BookController) SearchBook(ctx context.Context, query string) ([]model.
 	return c.bookService.SearchBook(ctx, query)
 }
 
-func (c *BookController) AddBook(ctx context.Context, isbn, title, genre string, authorID, stock int) error {
-	if strings.TrimSpace(isbn) == "" {
+type AddBookInput struct {
+	ISBN     string
+	Title    string
+	Genre    string
+	AuthorID int
+	Stock    int
+}
+
+func (c *BookController) AddBook(ctx context.Context, input AddBookInput) error {
+	if strings.TrimSpace(input.ISBN) == "" {
 		return fmt.Errorf("ISBN tidak boleh kosong")
 	}
-	if strings.TrimSpace(title) == "" {
+	if strings.TrimSpace(input.Title) == "" {
 		return fmt.Errorf("judul buku tidak boleh kosong")
 	}
-	if authorID <= 0 {
+	if input.AuthorID <= 0 {
 		return fmt.Errorf("ID penulis tidak valid")
 	}
-	if stock < 0 {
+	if input.Stock < 0 {
 		return fmt.Errorf("stok tidak boleh negatif")
 	}
 
 	book := &model.Book{
-		ISBN:     strings.TrimSpace(isbn),
-		Title:    strings.TrimSpace(title),
-		AuthorID: authorID,
-		Genre:    genre,
-		Stock:    stock,
+		ISBN:     strings.TrimSpace(input.ISBN),
+		Title:    strings.TrimSpace(input.Title),
+		AuthorID: input.AuthorID,
+		Genre:    input.Genre,
+		Stock:    input.Stock,
 	}
 	return c.bookService.AddBook(ctx, book)
 }
 
-func (c *BookController) UpdateBook(ctx context.Context, id int, isbn, title, genre string, authorID, stock int) error {
-	if id <= 0 {
+type UpdateBookInput struct {
+	ID       int
+	ISBN     string
+	Title    string
+	Genre    string
+	AuthorID int
+	Stock    int
+}
+
+func (c *BookController) UpdateBook(ctx context.Context, input UpdateBookInput) error {
+	if input.ID <= 0 {
 		return fmt.Errorf("ID buku tidak valid")
 	}
-	if strings.TrimSpace(title) == "" {
+	if strings.TrimSpace(input.Title) == "" {
 		return fmt.Errorf("judul buku tidak boleh kosong")
 	}
-	if authorID <= 0 {
+	if input.AuthorID <= 0 {
 		return fmt.Errorf("ID penulis tidak valid")
 	}
-	if stock < 0 {
+	if input.Stock < 0 {
 		return fmt.Errorf("stok tidak boleh negatif")
 	}
 
 	book := &model.Book{
-		ID:       id,
-		ISBN:     strings.TrimSpace(isbn),
-		Title:    strings.TrimSpace(title),
-		AuthorID: authorID,
-		Genre:    genre,
-		Stock:    stock,
+		ID:       input.ID,
+		ISBN:     strings.TrimSpace(input.ISBN),
+		Title:    strings.TrimSpace(input.Title),
+		AuthorID: input.AuthorID,
+		Genre:    input.Genre,
+		Stock:    input.Stock,
 	}
 	return c.bookService.UpdateBook(ctx, book)
 }
