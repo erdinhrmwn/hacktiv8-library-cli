@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/controller"
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
+	"github.com/erdinhrmwn/hacktiv8-library-cli/utils"
 	"github.com/manifoldco/promptui"
 	"github.com/olekukonko/tablewriter"
 )
@@ -15,9 +17,14 @@ import (
 type VisitorMenu struct {
 	authorController *controller.AuthorController
 	bookController   *controller.BookController
+	userController   *controller.UserController
+
+	currentUser *model.User
 }
 
-func (m *VisitorMenu) Dashboard(ctx context.Context) {
+func (m *VisitorMenu) Dashboard(ctx context.Context, user *model.User) {
+	m.currentUser = user
+
 	for {
 		prompt := promptui.Select{
 			Label: "VISITOR DASHBOARD",
@@ -133,8 +140,8 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 			}
 
 			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock", "Author Name", "Author Nationality"})
-			t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock, book.Author.Name, book.Author.Nationality})
+			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock", "Author ID", "Author Name", "Author Nationality"})
+			t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock, book.Author.ID, book.Author.Name, book.Author.Nationality})
 			t.Render()
 		case "Kembali ke Dashboard":
 			return
@@ -161,11 +168,56 @@ func (m *VisitorMenu) Account(ctx context.Context) {
 
 		switch sel {
 		case "Ubah Nama":
-			fmt.Printf("\n🚧 Ubah Nama — coming soon\n\n")
+			m.changeName(ctx)
 		case "Ganti Password":
-			fmt.Printf("\n🚧 Ganti Password — coming soon\n\n")
+			m.changePassword(ctx)
 		case "Kembali ke Dashboard":
 			return
 		}
 	}
+}
+
+func (m *VisitorMenu) changeName(ctx context.Context) {
+	newName, err := utils.AskInput("Nama Baru")
+	if err != nil {
+		return
+	}
+
+	err = m.userController.Update(ctx, controller.UpdateUserInput{
+		UserID: m.currentUser.ID,
+		Name:   newName,
+		Email:  m.currentUser.Email,
+		Role:   m.currentUser.Role,
+	})
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengubah nama: %v\n\n", err)
+		return
+	}
+
+	m.currentUser.Name = newName
+	fmt.Printf("\n✅ Nama berhasil diubah menjadi %s\n\n", newName)
+}
+
+func (m *VisitorMenu) changePassword(ctx context.Context) {
+	oldPassword, err := utils.AskInput("Password Lama")
+	if err != nil {
+		return
+	}
+
+	newPassword, err := utils.AskInput("Password Baru")
+	if err != nil {
+		return
+	}
+
+	err = m.userController.ChangePassword(ctx, controller.ChangePasswordInput{
+		UserID:      m.currentUser.ID,
+		OldPassword: oldPassword,
+		NewPassword: newPassword,
+	})
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengganti password: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("\n✅ Password berhasil diganti\n\n")
 }

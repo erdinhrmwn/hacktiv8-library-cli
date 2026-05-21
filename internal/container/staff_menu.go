@@ -17,9 +17,13 @@ type StaffMenu struct {
 	authorController *controller.AuthorController
 	bookController   *controller.BookController
 	userController   *controller.UserController
+
+	currentUser *model.User
 }
 
-func (m *StaffMenu) Dashboard(ctx context.Context) {
+func (m *StaffMenu) Dashboard(ctx context.Context, user *model.User) {
+	m.currentUser = user
+
 	for {
 		prompt := promptui.Select{
 			Label: "STAFF DASHBOARD",
