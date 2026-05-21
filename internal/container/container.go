@@ -64,9 +64,9 @@ func (c *Container) Run(ctx context.Context) {
 
 		switch user.Role {
 		case "staff":
-			c.StaffMenu.Dashboard(ctx)
+			c.StaffMenu.Dashboard(ctx, user)
 		case "visitor":
-			c.VisitorMenu.Dashboard(ctx)
+			c.VisitorMenu.Dashboard(ctx, user)
 		}
 	}
 }
