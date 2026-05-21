@@ -26,11 +26,13 @@ func New(db *sql.DB) *Container {
 	authService := service.NewAuthService(userRepository)
 	authorService := service.NewAuthorService(authorRepository)
 	bookService := service.NewBookService(bookRepository, authorRepository)
+	userService := service.NewUserService(userRepository)
 
 	// Controllers
 	authController := controller.NewAuthController(authService)
 	authorController := controller.NewAuthorController(authorService)
 	bookController := controller.NewBookController(bookService)
+	userController := controller.NewUserController(userService)
 
 	return &Container{
 		AuthMenu: &AuthMenu{
@@ -39,10 +41,12 @@ func New(db *sql.DB) *Container {
 		VisitorMenu: &VisitorMenu{
 			authorController: authorController,
 			bookController:   bookController,
+			userController:   userController,
 		},
 		StaffMenu: &StaffMenu{
 			authorController: authorController,
 			bookController:   bookController,
+			userController:   userController,
 		},
 	}
 }
@@ -64,9 +68,9 @@ func (c *Container) Run(ctx context.Context) {
 
 		switch user.Role {
 		case "staff":
-			c.StaffMenu.Dashboard(ctx)
+			c.StaffMenu.Dashboard(ctx, user)
 		case "visitor":
-			c.VisitorMenu.Dashboard(ctx)
+			c.VisitorMenu.Dashboard(ctx, user)
 		}
 	}
 }

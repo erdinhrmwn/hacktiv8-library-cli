@@ -65,14 +65,37 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*model.
 	return user, nil
 }
 
+func (r *UserRepository) FindByRole(ctx context.Context, role string) ([]*model.User, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT * FROM users WHERE role = ?`, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*model.User
+	for rows.Next() {
+		var user model.User
+		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role); err != nil {
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, nil
+}
+
 func (r *UserRepository) Save(ctx context.Context, user *model.User) error {
-	return nil
+	_, err := r.db.ExecContext(ctx, `INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)`,
+		user.ID, user.Name, user.Email, user.Password, user.Role)
+	return err
 }
 
 func (r *UserRepository) Update(ctx context.Context, user *model.User) error {
-	return nil
+	_, err := r.db.ExecContext(ctx, `UPDATE users SET name = ?, email = ?, role = ?, password = ? WHERE id = ?`,
+		user.Name, user.Email, user.Role, user.Password, user.ID)
+	return err
 }
 
 func (r *UserRepository) Delete(ctx context.Context, id int) error {
-	return nil
+	_, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+	return err
 }
