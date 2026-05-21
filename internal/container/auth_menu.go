@@ -16,9 +16,9 @@ type AuthMenu struct {
 
 func (m *AuthMenu) Main(ctx context.Context) *model.User {
 	prompt := promptui.Select{
-		Label: "LIBRARY CLI",
-		Items: []string{"Login", "Keluar Aplikasi"},
-		Size:  10,
+		Label:        "LIBRARY CLI",
+		Items:        []string{"Login", "Keluar Aplikasi"},
+		Size:         10,
 		HideSelected: true,
 	}
 	_, sel, err := prompt.Run()
