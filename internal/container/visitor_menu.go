@@ -3,11 +3,18 @@ package container
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/controller"
 	"github.com/manifoldco/promptui"
+	"github.com/olekukonko/tablewriter"
 )
 
-type VisitorMenu struct{}
+type VisitorMenu struct{
+	authorController *controller.AuthorController
+	bookController *controller.BookController
+}
 
 func (m *VisitorMenu) Dashboard(ctx context.Context) {
 	for {
@@ -63,11 +70,63 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 
 		switch sel {
 		case "Tampilkan Semua Buku":
-			fmt.Printf("\n🚧 Tampilkan Semua Buku — coming soon\n\n")
+			books, err := m.bookController.GetAllBooks(ctx)
+			if err != nil {
+				fmt.Printf("\n🚧 Tampilkan Semua Buku — failed: %v\n\n", err)
+				return
+			}
+
+			t := tablewriter.NewWriter(os.Stdout)
+			t.Header([]string{"ID", "ISBN", "Judul", "Genre", "Stock"})
+			for _, book := range books {
+				t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock})
+			}
+			t.Render()
 		case "Cari Buku (Berdasarkan Judul)":
-			fmt.Printf("\n🚧 Cari Buku — coming soon\n\n")
+			query := promptui.Prompt{
+				Label: "Masukkan kata kunci pencarian",
+			}
+			queryText, err := query.Run()
+			if err != nil {
+				return
+			}
+			books, err := m.bookController.SearchBook(ctx, queryText)
+			if err != nil {
+				fmt.Printf("\n🚧 Cari Buku — failed: %v\n\n", err)
+				return
+			}
+
+			t := tablewriter.NewWriter(os.Stdout)
+			t.Header([]string{"ID", "ISBN", "Judul", "Genre", "Stock"})
+			for _, book := range books {
+				t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock})
+			}
+			t.Render()
 		case "Lihat Detail Buku & Penulis (Berdasarkan ID)":
-			fmt.Printf("\n🚧 Detail Buku — coming soon\n\n")
+			prompt := promptui.Prompt{
+				Label: "Masukkan ID buku",
+			}
+			bookPrompt, err := prompt.Run()
+			if err != nil {
+				return
+			}
+
+			bookID, err := strconv.Atoi(bookPrompt)
+			if err != nil {
+				fmt.Printf("\n🚧 Lihat Detail Buku — failed: %v\n\n", err)
+				return
+			}
+
+			book, err := m.bookController.GetBookByID(ctx, bookID)
+			if err != nil {
+				fmt.Printf("\n🚧 Lihat Detail Buku — failed: %v\n\n", err)
+				return
+			}
+
+			t := tablewriter.NewWriter(os.Stdout)
+			t.Header([]string{"ID", "ISBN", "Judul", "Genre", "Stock", "Author Name", "Author Nationality"})
+			t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock, book.Author.Name, book.Author.Nationality})
+			t.Render()
 		case "Kembali ke Dashboard":
 			return
 		}

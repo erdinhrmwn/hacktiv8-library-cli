@@ -38,7 +38,13 @@ func (r *BookRepository) GetAllBooks(ctx context.Context) ([]model.Book, error) 
 }
 
 func (r *BookRepository) GetBookByID(ctx context.Context, id int) (*model.Book, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT * FROM books WHERE id = ?`, id)
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			b.id, b.isbn, b.title, b.author_id, b.genre, b.stock,
+			a.id as author_id, a.name as author_name, a.birth_date, a.nationality
+		FROM books b
+		JOIN authors a ON b.author_id = a.id
+		WHERE b.id = ?`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +52,15 @@ func (r *BookRepository) GetBookByID(ctx context.Context, id int) (*model.Book, 
 
 	var book model.Book
 	if rows.Next() {
-		if err := rows.Scan(&book.ID, &book.ISBN, &book.Title, &book.AuthorID, &book.Genre, &book.Stock); err != nil {
+		var author model.Author
+		if err := rows.Scan(
+			&book.ID, &book.ISBN, &book.Title, &book.AuthorID, &book.Genre, &book.Stock,
+			&author.ID, &author.Name, &author.BirthDate, &author.Nationality,
+		); err != nil {
 			return nil, err
 		}
+
+		book.Author = &author
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
