@@ -1,29 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"strings"
+	"os"
+	"os/signal"
 
-	"github.com/erdinhrmwn/hacktiv8-library-cli/config"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/database"
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/container"
 )
 
 func main() {
-	cfg := config.InitConfig()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
-	db, err := database.InitializeDB(cfg)
-	if err != nil {
-		fmt.Printf("Failed to initialize database: %v\n", err)
-		return
-	}
-	defer db.Close()
+	app := container.New()
 
-	if err := db.Ping(); err != nil {
-		fmt.Printf("Failed to ping database: %v\n", err)
-		return
-	}
-
-	fmt.Println(strings.Repeat("=", 25))
-	fmt.Println("📚 Hacktiv8 Library CLI")
-	fmt.Println(strings.Repeat("=", 25))
+	fmt.Println("📚 Library CLI — v0.1.0")
+	app.Run(ctx)
 }
