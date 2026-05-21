@@ -2,11 +2,10 @@ package container
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
-	"github.com/erdinhrmwn/hacktiv8-library-cli/config"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/controller"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/database"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/service"
 )
@@ -17,16 +16,7 @@ type Container struct {
 	StaffMenu   *StaffMenu
 }
 
-func New() *Container {
-	cfg := config.InitConfig()
-
-	db, err := database.InitializeDB(cfg)
-	if err != nil {
-		fmt.Println("❌ Gagal terhubung ke database:", err)
-		return nil
-	}
-	defer db.Close()
-
+func New(db *sql.DB) *Container {
 	// Repositories
 	userRepository := repository.NewUserRepository(db)
 	authorRepository := repository.NewAuthorRepository(db)
