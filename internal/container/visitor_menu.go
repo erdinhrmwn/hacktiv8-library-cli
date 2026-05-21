@@ -20,7 +20,8 @@ func (m *VisitorMenu) Dashboard(ctx context.Context) {
 				"Pengaturan Akun",
 				"Logout",
 			},
-			Size: 10,
+			Size:         10,
+			HideSelected: true,
 		}
 		_, sel, err := prompt.Run()
 		if err != nil {
@@ -52,7 +53,8 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 				"Lihat Detail Buku & Penulis (Berdasarkan ID)",
 				"Kembali ke Dashboard",
 			},
-			Size: 10,
+			Size:         10,
+			HideSelected: true,
 		}
 		_, sel, err := prompt.Run()
 		if err != nil {
@@ -81,7 +83,8 @@ func (m *VisitorMenu) Account(ctx context.Context) {
 				"Ganti Password",
 				"Kembali ke Dashboard",
 			},
-			Size: 10,
+			Size:         10,
+			HideSelected: true,
 		}
 		_, sel, err := prompt.Run()
 		if err != nil {

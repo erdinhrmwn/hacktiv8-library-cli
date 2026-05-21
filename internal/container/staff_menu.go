@@ -22,7 +22,8 @@ func (m *StaffMenu) Dashboard(ctx context.Context) {
 				"Pantau Log Aktivitas (Activity Logs)",
 				"Logout",
 			},
-			Size: 10,
+			Size:         10,
+			HideSelected: true,
 		}
 		_, sel, err := prompt.Run()
 		if err != nil {
@@ -57,7 +58,8 @@ func (m *StaffMenu) Members(ctx context.Context) {
 				"Lihat Daftar Visitor",
 				"Kembali ke Dashboard",
 			},
-			Size: 10,
+			Size:         10,
+			HideSelected: true,
 		}
 		_, sel, err := prompt.Run()
 		if err != nil {
@@ -87,7 +89,8 @@ func (m *StaffMenu) Catalog(ctx context.Context) {
 				"Lihat Daftar Penulis",
 				"Kembali ke Dashboard",
 			},
-			Size: 10,
+			Size:         10,
+			HideSelected: true,
 		}
 		_, sel, err := prompt.Run()
 		if err != nil {

@@ -15,6 +15,6 @@ func main() {
 
 	app := container.New()
 
-	fmt.Println("📚 Library CLI — v0.1.0")
+	fmt.Println("📚 Hacktiv8 Library CLI — v0.1.0")
 	app.Run(ctx)
 }
