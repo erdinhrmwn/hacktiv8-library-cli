@@ -2,7 +2,6 @@ package container
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -24,7 +23,6 @@ type VisitorMenu struct {
 
 func (m *VisitorMenu) Dashboard(ctx context.Context, user *model.User) {
 	m.currentUser = user
-
 	for {
 		prompt := promptui.Select{
 			Label: "VISITOR DASHBOARD",
@@ -78,75 +76,74 @@ func (m *VisitorMenu) Catalog(ctx context.Context) {
 
 		switch sel {
 		case "Tampilkan Semua Buku":
-			books, err := m.bookController.GetAllBooks(ctx)
-			if err != nil {
-				fmt.Printf("\n🚧 Tampilkan Semua Buku — failed: %v\n\n", err)
-				return
-			}
-
-			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock"})
-			for _, book := range books {
-				t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock})
-			}
-			t.Render()
+			m.showAllBooks(ctx)
 		case "Cari Buku (Berdasarkan Judul)":
-			query := promptui.Prompt{
-				Label: "Masukkan kata kunci pencarian",
-			}
-			queryText, err := query.Run()
-			if err != nil {
-				return
-			}
-			books, err := m.bookController.SearchBook(ctx, queryText)
-			if err != nil {
-				fmt.Printf("\n🚧 Cari Buku — failed: %v\n\n", err)
-				return
-			}
-
-			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock"})
-			for _, book := range books {
-				t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock})
-			}
-			t.Render()
+			m.searchBooks(ctx)
 		case "Lihat Detail Buku & Penulis (Berdasarkan ID)":
-			prompt := promptui.Prompt{
-				Label: "Masukkan ID buku",
-				Validate: func(s string) error {
-					_, err := strconv.Atoi(s)
-					if err != nil {
-						return errors.New("Invalid number")
-					}
-
-					return nil
-				},
-			}
-			bookPrompt, err := prompt.Run()
-			if err != nil {
-				return
-			}
-
-			bookID, err := strconv.Atoi(bookPrompt)
-			if err != nil {
-				fmt.Printf("\n🚧 Lihat Detail Buku — failed: %v\n\n", err)
-				return
-			}
-
-			book, err := m.bookController.GetBookByID(ctx, bookID)
-			if err != nil {
-				fmt.Printf("\n🚧 Lihat Detail Buku — failed: %v\n\n", err)
-				return
-			}
-
-			t := tablewriter.NewWriter(os.Stdout)
-			t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock", "Author ID", "Author Name", "Author Nationality"})
-			t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock, book.Author.ID, book.Author.Name, book.Author.Nationality})
-			t.Render()
+			m.showBookDetail(ctx)
 		case "Kembali ke Dashboard":
 			return
 		}
 	}
+}
+
+func (m *VisitorMenu) showAllBooks(ctx context.Context) {
+	books, err := m.bookController.GetAllBooks(ctx)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal menampilkan buku: %v\n\n", err)
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock"})
+	for _, b := range books {
+		t.Append([]any{b.ID, b.ISBN, b.Title, b.Genre, b.Stock})
+	}
+	t.Render()
+}
+
+func (m *VisitorMenu) searchBooks(ctx context.Context) {
+	query, err := utils.AskInput("Masukkan kata kunci pencarian")
+	if err != nil {
+		return
+	}
+
+	books, err := m.bookController.SearchBook(ctx, query)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mencari buku: %v\n\n", err)
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock"})
+	for _, b := range books {
+		t.Append([]any{b.ID, b.ISBN, b.Title, b.Genre, b.Stock})
+	}
+	t.Render()
+}
+
+func (m *VisitorMenu) showBookDetail(ctx context.Context) {
+	idStr, err := utils.AskInput("Masukkan ID buku")
+	if err != nil {
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		fmt.Printf("\n❌ ID buku harus berupa angka\n\n")
+		return
+	}
+
+	book, err := m.bookController.GetBookByID(ctx, id)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal melihat detail buku: %v\n\n", err)
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "ISBN", "Title", "Genre", "Stock", "Author Name", "Author Nationality"})
+	t.Append([]any{book.ID, book.ISBN, book.Title, book.Genre, book.Stock, book.Author.Name, book.Author.Nationality})
+	t.Render()
 }
 
 func (m *VisitorMenu) Account(ctx context.Context) {
