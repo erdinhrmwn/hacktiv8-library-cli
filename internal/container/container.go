@@ -26,11 +26,13 @@ func New(db *sql.DB) *Container {
 	authService := service.NewAuthService(userRepository)
 	authorService := service.NewAuthorService(authorRepository)
 	bookService := service.NewBookService(bookRepository, authorRepository)
+	userService := service.NewUserService(userRepository)
 
 	// Controllers
 	authController := controller.NewAuthController(authService)
 	authorController := controller.NewAuthorController(authorService)
 	bookController := controller.NewBookController(bookService)
+	userController := controller.NewUserController(userService)
 
 	return &Container{
 		AuthMenu: &AuthMenu{
@@ -43,6 +45,7 @@ func New(db *sql.DB) *Container {
 		StaffMenu: &StaffMenu{
 			authorController: authorController,
 			bookController:   bookController,
+			userController:   userController,
 		},
 	}
 }
