@@ -16,6 +16,8 @@ import (
 type VisitorMenu struct {
 	authorController *controller.AuthorController
 	bookController   *controller.BookController
+	userController   *controller.UserController
+
 	currentUser *model.User
 }
 
@@ -173,9 +175,46 @@ func (m *VisitorMenu) Account(ctx context.Context) {
 }
 
 func (m *VisitorMenu) changeName(ctx context.Context) {
-	fmt.Printf("\n🚧 Ubah Nama — coming soon\n\n")
+	newName, err := utils.AskInput("Nama Baru")
+	if err != nil {
+		return
+	}
+
+	err = m.userController.Update(ctx, controller.UpdateUserInput{
+		UserID: m.currentUser.ID,
+		Name:   newName,
+		Email:  m.currentUser.Email,
+		Role:   m.currentUser.Role,
+	})
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengubah nama: %v\n\n", err)
+		return
+	}
+
+	m.currentUser.Name = newName
+	fmt.Printf("\n✅ Nama berhasil diubah menjadi %s\n\n", newName)
 }
 
 func (m *VisitorMenu) changePassword(ctx context.Context) {
-	fmt.Printf("\n🚧 Ganti Password — coming soon\n\n")
+	oldPassword, err := utils.AskInput("Password Lama")
+	if err != nil {
+		return
+	}
+
+	newPassword, err := utils.AskInput("Password Baru")
+	if err != nil {
+		return
+	}
+
+	err = m.userController.ChangePassword(ctx, controller.ChangePasswordInput{
+		UserID:      m.currentUser.ID,
+		OldPassword: oldPassword,
+		NewPassword: newPassword,
+	})
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengganti password: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("\n✅ Password berhasil diganti\n\n")
 }

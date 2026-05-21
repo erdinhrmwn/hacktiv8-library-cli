@@ -16,6 +16,7 @@ import (
 type StaffMenu struct {
 	authorController *controller.AuthorController
 	bookController   *controller.BookController
+	userController   *controller.UserController
 
 	currentUser *model.User
 }
@@ -80,13 +81,64 @@ func (m *StaffMenu) Members(ctx context.Context) {
 
 		switch sel {
 		case "Daftarkan Visitor Baru":
-			fmt.Printf("\n🚧 Daftarkan Visitor Baru — coming soon\n\n")
+			m.registerVisitor(ctx)
 		case "Lihat Daftar Visitor":
-			fmt.Printf("\n🚧 Lihat Daftar Visitor — coming soon\n\n")
+			m.listVisitors(ctx)
 		case "Kembali ke Dashboard":
 			return
 		}
 	}
+}
+
+func (m *StaffMenu) registerVisitor(ctx context.Context) {
+	name, err := utils.AskInput("Nama")
+	if err != nil {
+		return
+	}
+
+	email, err := utils.AskInput("Email")
+	if err != nil {
+		return
+	}
+
+	password, err := utils.AskInput("Password")
+	if err != nil {
+		return
+	}
+
+	err = m.userController.Create(ctx, controller.CreateUserInput{
+		Name:     name,
+		Email:    email,
+		Password: password,
+		Role:     "visitor",
+	})
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mendaftarkan visitor: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("\n✅ Visitor berhasil didaftarkan\n\n")
+}
+
+func (m *StaffMenu) listVisitors(ctx context.Context) {
+	users, err := m.userController.GetByRole(ctx, "visitor")
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar visitor: %v\n\n", err)
+		return
+	}
+
+	if len(users) == 0 {
+		fmt.Printf("\n📭 Belum ada visitor terdaftar\n\n")
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "Nama", "Email", "Role"})
+	for _, u := range users {
+		t.Append([]any{u.ID, u.Name, u.Email, u.Role})
+	}
+	t.Render()
+	fmt.Println()
 }
 
 func (m *StaffMenu) Catalog(ctx context.Context) {
