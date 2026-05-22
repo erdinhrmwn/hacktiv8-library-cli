@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/controller"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
@@ -12,20 +13,31 @@ import (
 func TestStaffFlow(t *testing.T) {
 	ctx := context.Background()
 
+	// repositories
 	userRepo := repository.NewUserRepository(testDB)
-	authService := service.NewAuthService(userRepo)
-	authCtrl := controller.NewAuthController(authService)
 	authorRepo := repository.NewAuthorRepository(testDB)
-	authorCtrl := controller.NewAuthorController(service.NewAuthorService(authorRepo))
 	bookRepo := repository.NewBookRepository(testDB)
-	bookCtrl := controller.NewBookController(service.NewBookService(bookRepo, authorRepo))
 	loanRepo := repository.NewLoanRepository(testDB)
-	loanService := service.NewLoanService(loanRepo, bookRepo, repository.NewInvoiceRepository(testDB))
-	loanCtrl := controller.NewLoanController(loanService, loanRepo)
 	invoiceRepo := repository.NewInvoiceRepository(testDB)
-	invoiceCtrl := controller.NewInvoiceController(invoiceRepo, loanRepo)
 	paymentRepo := repository.NewPaymentRepository(testDB)
-	paymentCtrl := controller.NewPaymentController(paymentRepo, invoiceRepo)
+
+	// services
+	authService := service.NewAuthService(userRepo)
+	authorService := service.NewAuthorService(authorRepo)
+	bookService := service.NewBookService(bookRepo, authorRepo)
+	loanService := service.NewLoanService(loanRepo, bookRepo, invoiceRepo)
+	invoiceService := service.NewInvoiceService(invoiceRepo)
+	paymentService := service.NewPaymentService(paymentRepo, invoiceRepo)
+
+	// controllers
+	authCtrl := controller.NewAuthController(authService)
+	authorCtrl := controller.NewAuthorController(authorService)
+	bookCtrl := controller.NewBookController(bookService)
+	loanCtrl := controller.NewLoanController(loanService)
+	invoiceCtrl := controller.NewInvoiceController(invoiceService)
+	paymentCtrl := controller.NewPaymentController(paymentService)
+
+	var staffID, visitorID int
 
 	// Login as staff
 	t.Run("Login as staff", func(t *testing.T) {
@@ -33,9 +45,13 @@ func TestStaffFlow(t *testing.T) {
 		if err != nil {
 			t.Fatal("gagal login:", err)
 		}
+		staffID = user.ID
 		if user.Role != "staff" {
 			t.Fatal("role should be staff")
 		}
+
+		visitor, _ := userRepo.GetUserByEmail(ctx, "visitor@test.com")
+		visitorID = visitor.ID
 	})
 
 	// Lihat daftar author
@@ -54,6 +70,7 @@ func TestStaffFlow(t *testing.T) {
 	t.Run("Create author", func(t *testing.T) {
 		err := authorCtrl.AddAuthor(ctx, controller.AddAuthorInput{
 			Name:        "Author Beta",
+			BirthDate:   time.Date(1985, 5, 15, 0, 0, 0, 0, time.UTC),
 			Nationality: "Japanese",
 			Bio:         "Bio beta",
 		})
@@ -113,12 +130,12 @@ func TestStaffFlow(t *testing.T) {
 	// Borrow book
 	var loanID int
 	t.Run("Borrow book", func(t *testing.T) {
-		err := loanCtrl.BorrowBook(ctx, 2, 1, newBookID) // visitor=2, staff=1
+		err := loanCtrl.BorrowBook(ctx, visitorID, staffID, newBookID)
 		if err != nil {
 			t.Fatal("gagal pinjam:", err)
 		}
 
-		loans, _ := loanCtrl.GetActiveByVisitorID(ctx, 2)
+		loans, _ := loanCtrl.GetActiveByVisitorID(ctx, visitorID)
 		if len(loans) != 1 {
 			t.Fatal("seharusnya 1 loan aktif, got:", len(loans))
 		}
@@ -150,12 +167,12 @@ func TestStaffFlow(t *testing.T) {
 
 	// Borrow again, then return after due date
 	t.Run("Borrow again for late return test", func(t *testing.T) {
-		loanCtrl.BorrowBook(ctx, 2, 1, newBookID)
+		loanCtrl.BorrowBook(ctx, visitorID, staffID, newBookID)
 	})
 
 	// Return after due date - invoice must be created
 	t.Run("Return book after due date (invoice created)", func(t *testing.T) {
-		loans, _ := loanCtrl.GetActiveByVisitorID(ctx, 2)
+		loans, _ := loanCtrl.GetActiveByVisitorID(ctx, visitorID)
 		if len(loans) == 0 {
 			t.Fatal("tidak ada loan aktif")
 		}
@@ -172,7 +189,7 @@ func TestStaffFlow(t *testing.T) {
 		}
 
 		// Cek invoice
-		invoices, _ := invoiceCtrl.GetUnpaidByUserID(ctx, 2)
+		invoices, _ := invoiceCtrl.GetUnpaidByUserID(ctx, visitorID)
 		if len(invoices) == 0 {
 			t.Fatal("seharusnya ada invoice")
 		}
@@ -180,7 +197,7 @@ func TestStaffFlow(t *testing.T) {
 
 	// Pay invoice
 	t.Run("Pay invoice", func(t *testing.T) {
-		invoices, _ := invoiceCtrl.GetUnpaidByUserID(ctx, 2)
+		invoices, _ := invoiceCtrl.GetUnpaidByUserID(ctx, visitorID)
 		if len(invoices) == 0 {
 			t.Fatal("tidak ada invoice untuk dibayar")
 		}
@@ -191,7 +208,7 @@ func TestStaffFlow(t *testing.T) {
 		}
 
 		// Cek invoice sudah paid
-		remaining, _ := invoiceCtrl.GetUnpaidByUserID(ctx, 2)
+		remaining, _ := invoiceCtrl.GetUnpaidByUserID(ctx, visitorID)
 		if len(remaining) != 0 {
 			t.Fatal("invoice seharusnya sudah paid")
 		}

@@ -13,21 +13,32 @@ import (
 func TestVisitorFlow(t *testing.T) {
 	ctx := context.Background()
 
+	// repositories
 	userRepo := repository.NewUserRepository(testDB)
-	authService := service.NewAuthService(userRepo)
-	authCtrl := controller.NewAuthController(authService)
-	userService := service.NewUserService(userRepo)
-	userCtrl := controller.NewUserController(userService)
+	bookRepo := repository.NewBookRepository(testDB)
 	loanRepo := repository.NewLoanRepository(testDB)
-	loanCtrl := controller.NewLoanController(nil, loanRepo)
 	invoiceRepo := repository.NewInvoiceRepository(testDB)
-	invoiceCtrl := controller.NewInvoiceController(invoiceRepo, loanRepo)
+
+	// services
+	authService := service.NewAuthService(userRepo)
+	userService := service.NewUserService(userRepo)
+	loanService := service.NewLoanService(loanRepo, bookRepo, invoiceRepo)
+	invoiceService := service.NewInvoiceService(invoiceRepo)
+
+	// controllers
+	authCtrl := controller.NewAuthController(authService)
+	userCtrl := controller.NewUserController(userService)
+	loanCtrl := controller.NewLoanController(loanService)
+	invoiceCtrl := controller.NewInvoiceController(invoiceService)
+
+	var visitorID int
 
 	t.Run("Login as visitor", func(t *testing.T) {
 		user, err := authCtrl.Login(ctx, "visitor@test.com", "password")
 		if err != nil {
 			t.Fatal("gagal login:", err)
 		}
+		visitorID = user.ID
 		if user.Role != "visitor" {
 			t.Fatal("role should be visitor, got:", user.Role)
 		}
@@ -35,16 +46,16 @@ func TestVisitorFlow(t *testing.T) {
 
 	t.Run("Change name", func(t *testing.T) {
 		err := userCtrl.Update(ctx, controller.UpdateUserInput{
-			ID:    2,
-			Name:  "Visitor Updated",
-			Email: "visitor@test.com",
-			Role:  "visitor",
+			UserID: visitorID,
+			Name:   "Visitor Updated",
+			Email:  "visitor-updated@test.com",
+			Role:   "visitor",
 		})
 		if err != nil {
 			t.Fatal("gagal ubah nama:", err)
 		}
 
-		user, _ := userRepo.GetUserByID(ctx, 2)
+		user, _ := userRepo.GetUserByID(ctx, visitorID)
 		if user.Name != "Visitor Updated" {
 			t.Fatal("nama belum berubah, got:", user.Name)
 		}
@@ -52,7 +63,7 @@ func TestVisitorFlow(t *testing.T) {
 
 	t.Run("Change password and verify", func(t *testing.T) {
 		err := userCtrl.ChangePassword(ctx, controller.ChangePasswordInput{
-			UserID:      2,
+			UserID:      visitorID,
 			OldPassword: "password",
 			NewPassword: "newpass123",
 		})
@@ -60,14 +71,14 @@ func TestVisitorFlow(t *testing.T) {
 			t.Fatal("gagal ganti password:", err)
 		}
 
-		user, _ := userRepo.GetUserByID(ctx, 2)
+		user, _ := userRepo.GetUserByID(ctx, visitorID)
 		if !utils.VerifyPassword("newpass123", user.Password) {
 			t.Fatal("password baru tidak cocok")
 		}
 	})
 
 	t.Run("Check loans", func(t *testing.T) {
-		loans, err := loanCtrl.GetActiveByVisitorID(ctx, 2)
+		loans, err := loanCtrl.GetActiveByVisitorID(ctx, visitorID)
 		if err != nil {
 			t.Fatal("gagal ambil loans:", err)
 		}
@@ -77,7 +88,7 @@ func TestVisitorFlow(t *testing.T) {
 	})
 
 	t.Run("Check invoices", func(t *testing.T) {
-		invoices, err := invoiceCtrl.GetUnpaidByUserID(ctx, 2)
+		invoices, err := invoiceCtrl.GetUnpaidByUserID(ctx, visitorID)
 		if err != nil {
 			t.Fatal("gagal ambil invoices:", err)
 		}

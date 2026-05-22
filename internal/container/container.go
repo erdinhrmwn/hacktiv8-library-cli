@@ -33,6 +33,8 @@ func New(db *sql.DB) *Container {
 	userService := service.NewUserService(userRepository)
 	activityService := service.NewActivityService(activityRepository)
 	loanService := service.NewLoanService(loanRepository, bookRepository, invoiceRepository)
+	invoiceService := service.NewInvoiceService(invoiceRepository)
+	paymentService := service.NewPaymentService(paymentRepository, invoiceRepository)
 
 	// Controllers
 	authController := controller.NewAuthController(authService)
@@ -40,9 +42,9 @@ func New(db *sql.DB) *Container {
 	bookController := controller.NewBookController(bookService)
 	userController := controller.NewUserController(userService)
 	activityController := controller.NewActivityController(activityService)
-	loanController := controller.NewLoanController(loanService, loanRepository)
-	invoiceController := controller.NewInvoiceController(invoiceRepository, loanRepository)
-	paymentController := controller.NewPaymentController(paymentRepository, invoiceRepository)
+	loanController := controller.NewLoanController(loanService)
+	invoiceController := controller.NewInvoiceController(invoiceService)
+	paymentController := controller.NewPaymentController(paymentService)
 
 	return &Container{
 		AuthMenu: &AuthMenu{

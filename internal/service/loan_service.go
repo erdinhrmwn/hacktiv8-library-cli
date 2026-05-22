@@ -92,3 +92,22 @@ func (s *LoanService) GetActiveByVisitorID(ctx context.Context, visitorID int) (
 	}
 	return loans, nil
 }
+
+func (s *LoanService) GetLoanByID(ctx context.Context, id int) (*model.Loan, error) {
+	loan, err := s.loanRepository.GetLoanByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if loan.ID == 0 {
+		return nil, fmt.Errorf("loan tidak ditemukan")
+	}
+	return loan, nil
+}
+
+func (s *LoanService) GetAllLoans(ctx context.Context) ([]model.Loan, error) {
+	loans, err := s.loanRepository.GetAllLoans(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return loans, nil
+}

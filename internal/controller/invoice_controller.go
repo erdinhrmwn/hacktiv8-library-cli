@@ -5,25 +5,24 @@ import (
 	"fmt"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/service"
 )
 
 type InvoiceController struct {
-	invoiceRepository *repository.InvoiceRepository
-	loanRepository    *repository.LoanRepository
+	invoiceService *service.InvoiceService
 }
 
-func NewInvoiceController(invoiceRepository *repository.InvoiceRepository, loanRepository *repository.LoanRepository) *InvoiceController {
-	return &InvoiceController{invoiceRepository: invoiceRepository, loanRepository: loanRepository}
+func NewInvoiceController(invoiceService *service.InvoiceService) *InvoiceController {
+	return &InvoiceController{invoiceService: invoiceService}
 }
 
 func (c *InvoiceController) GetUnpaidByUserID(ctx context.Context, userID int) ([]model.Invoice, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("ID user tidak valid")
 	}
-	return c.invoiceRepository.GetUnpaidInvoicesByUserID(ctx, userID)
+	return c.invoiceService.GetUnpaidByUserID(ctx, userID)
 }
 
 func (c *InvoiceController) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
-	return c.invoiceRepository.GetUnpaidInvoices(ctx)
+	return c.invoiceService.GetUnpaidInvoices(ctx)
 }

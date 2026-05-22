@@ -5,27 +5,27 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erdinhrmwn/hacktiv8-library-cli/config"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/database"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/utils"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var testDB *sql.DB
 
+const dsnRoot = "root@tcp(127.0.0.1:3306)/?parseTime=true"
+const dsnTest = "root@tcp(127.0.0.1:3306)/library_test?parseTime=true&multiStatements=true"
+
 func TestMain(m *testing.M) {
-	cfg := config.Config{
-		DBHost:     "127.0.0.1",
-		DBPort:     3306,
-		DBUser:     "root",
-		DBPassword: "",
-		DBName:     "library_test",
+	db, err := sql.Open("mysql", dsnRoot)
+	if err != nil {
+		panic("gagal konek root: " + err.Error())
 	}
 
-	var err error
-	testDB, err = database.InitializeDB(cfg)
+	db.Exec("DROP DATABASE IF EXISTS library_test")
+	db.Exec("CREATE DATABASE library_test")
+	db.Close()
+
+	testDB, err = sql.Open("mysql", dsnTest)
 	if err != nil {
-		panic("gagal konek database test: " + err.Error())
+		panic("gagal konek test DB: " + err.Error())
 	}
 
 	setupSchema(testDB)
@@ -33,29 +33,26 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
-	cleanup(testDB)
+	cleanup()
 	testDB.Close()
 	os.Exit(code)
 }
 
 func setupSchema(db *sql.DB) {
-	db.Exec("DROP DATABASE IF EXISTS library_test")
-	db.Exec("CREATE DATABASE library_test")
-	db.Exec("USE library_test")
-
-	schema, _ := os.ReadFile("./sql/schema.sql")
-	_, err := db.Exec(string(schema))
+	schema, err := os.ReadFile("../sql/schema.sql")
+	if err != nil {
+		panic("gagal baca schema: " + err.Error())
+	}
+	_, err = db.Exec(string(schema))
 	if err != nil {
 		panic("gagal setup schema: " + err.Error())
 	}
 }
 
 func seedData(db *sql.DB) {
-	hash, _ := utils.HashPassword("password")
-
 	db.Exec(`INSERT INTO users (name, email, password, role) VALUES
-		('Test Staff', 'staff@test.com', ?, 'staff'),
-		('Test Visitor', 'visitor@test.com', ?, 'visitor')`, hash, hash)
+		('Test Staff', 'staff@test.com', '$2a$10$wT0s4lsAd/tN/LcFwDDLzuWk8aRTdZT1/M8nxSG2aIFVVv9eIVgWy', 'staff'),
+		('Test Visitor', 'visitor@test.com', '$2a$10$wT0s4lsAd/tN/LcFwDDLzuWk8aRTdZT1/M8nxSG2aIFVVv9eIVgWy', 'visitor')`)
 
 	db.Exec(`INSERT INTO authors (name, birth_date, nationality, bio) VALUES
 		('Author One', '1980-01-01', 'Indonesian', 'Bio one'),
@@ -67,6 +64,10 @@ func seedData(db *sql.DB) {
 		('333-333', 'Book Three', 1, 'Romance', 5)`)
 }
 
-func cleanup(db *sql.DB) {
-	db.Exec("DROP DATABASE IF EXISTS library_test")
+func cleanup() {
+	db, _ := sql.Open("mysql", dsnRoot)
+	if db != nil {
+		db.Exec("DROP DATABASE IF EXISTS library_test")
+		db.Close()
+	}
 }
