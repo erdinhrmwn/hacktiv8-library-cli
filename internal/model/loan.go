@@ -13,6 +13,6 @@ type Loan struct {
 	Status     string // "active" | "returned"
 
 	Visitor *User
-	Staff *User
-	Book *Book
+	Staff   *User
+	Book    *Book
 }

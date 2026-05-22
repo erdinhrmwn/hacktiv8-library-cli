@@ -16,7 +16,7 @@ func NewInvoiceRepository(db *sql.DB) *InvoiceRepository {
 	return &InvoiceRepository{db: db}
 }
 
-func (r *InvoiceRepository) GetAll(ctx context.Context) ([]model.Invoice, error) {
+func (r *InvoiceRepository) GetAllInvoices(ctx context.Context) ([]model.Invoice, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT * FROM invoices")
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (r *InvoiceRepository) GetAll(ctx context.Context) ([]model.Invoice, error)
 	return invoices, rows.Err()
 }
 
-func (r *InvoiceRepository) GetByID(ctx context.Context, id int) (*model.Invoice, error) {
+func (r *InvoiceRepository) GetInvoiceByID(ctx context.Context, id int) (*model.Invoice, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT * FROM invoices WHERE id = ?`, id)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (r *InvoiceRepository) GetByID(ctx context.Context, id int) (*model.Invoice
 	return &i, rows.Err()
 }
 
-func (r *InvoiceRepository) GetUnpaidByUserID(ctx context.Context, userID int) ([]model.Invoice, error) {
+func (r *InvoiceRepository) GetUnpaidInvoicesByUserID(ctx context.Context, userID int) ([]model.Invoice, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT * FROM invoices WHERE user_id = ? AND status = 'unpaid'`, userID)
 	if err != nil {
@@ -69,7 +69,7 @@ func (r *InvoiceRepository) GetUnpaidByUserID(ctx context.Context, userID int) (
 	return invoices, rows.Err()
 }
 
-func (r *InvoiceRepository) Create(ctx context.Context, userID, loanID int, amount float64) error {
+func (r *InvoiceRepository) CreateInvoice(ctx context.Context, userID, loanID int, amount float64) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO invoices (user_id, loan_id, amount, issue_date, status) VALUES (?, ?, ?, ?, 'unpaid')`,
 		userID, loanID, amount, time.Now())

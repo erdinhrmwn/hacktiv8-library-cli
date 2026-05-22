@@ -16,7 +16,7 @@ func NewLoanRepository(db *sql.DB) *LoanRepository {
 	return &LoanRepository{db: db}
 }
 
-func (r *LoanRepository) GetAll(ctx context.Context) ([]model.Loan, error) {
+func (r *LoanRepository) GetAllLoans(ctx context.Context) ([]model.Loan, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT * FROM loans")
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (r *LoanRepository) GetAll(ctx context.Context) ([]model.Loan, error) {
 	return loans, rows.Err()
 }
 
-func (r *LoanRepository) GetByID(ctx context.Context, id int) (*model.Loan, error) {
+func (r *LoanRepository) GetLoanByID(ctx context.Context, id int) (*model.Loan, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT * FROM loans WHERE id = ?`, id)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (r *LoanRepository) GetByID(ctx context.Context, id int) (*model.Loan, erro
 	return &l, rows.Err()
 }
 
-func (r *LoanRepository) Create(ctx context.Context, visitorID, staffID, bookID int) error {
+func (r *LoanRepository) CreateLoan(ctx context.Context, visitorID, staffID, bookID int) error {
 	now := time.Now()
 	dueDate := now.Add(7 * 24 * time.Hour)
 
@@ -62,7 +62,7 @@ func (r *LoanRepository) Create(ctx context.Context, visitorID, staffID, bookID 
 	return err
 }
 
-func (r *LoanRepository) Return(ctx context.Context, loanID int) error {
+func (r *LoanRepository) ReturnLoan(ctx context.Context, loanID int) error {
 	now := time.Now()
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE loans SET return_date = ?, status = 'returned' WHERE id = ?`,
@@ -70,7 +70,7 @@ func (r *LoanRepository) Return(ctx context.Context, loanID int) error {
 	return err
 }
 
-func (r *LoanRepository) GetActiveByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
+func (r *LoanRepository) GetActiveLoansByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT * FROM loans WHERE visitor_id = ? AND status = 'active'`, visitorID)
 	if err != nil {

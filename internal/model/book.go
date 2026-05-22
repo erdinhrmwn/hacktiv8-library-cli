@@ -8,5 +8,5 @@ type Book struct {
 	Genre    string
 	Stock    int
 
-	Author   *Author
+	Author *Author
 }

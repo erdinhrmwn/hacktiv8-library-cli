@@ -12,12 +12,12 @@ import (
 )
 
 type LoanController struct {
-	loanService *service.LoanService
-	loanRepo    *repository.LoanRepository
+	loanService    *service.LoanService
+	loanRepository *repository.LoanRepository
 }
 
-func NewLoanController(ls *service.LoanService, lr *repository.LoanRepository) *LoanController {
-	return &LoanController{loanService: ls, loanRepo: lr}
+func NewLoanController(loanService *service.LoanService, loanRepository *repository.LoanRepository) *LoanController {
+	return &LoanController{loanService: loanService, loanRepository: loanRepository}
 }
 
 func (c *LoanController) BorrowBook(ctx context.Context, visitorID, staffID, bookID int) error {
@@ -45,7 +45,7 @@ func (c *LoanController) GetActiveByVisitorID(ctx context.Context, visitorID int
 }
 
 func (c *LoanController) GetAll(ctx context.Context) ([]model.Loan, error) {
-	loans, err := c.loanRepo.GetAll(ctx)
+	loans, err := c.loanRepository.GetAllLoans(ctx)
 	if err != nil {
 		return nil, err
 	}

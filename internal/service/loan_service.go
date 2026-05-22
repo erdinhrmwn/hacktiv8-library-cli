@@ -12,25 +12,25 @@ import (
 const FinePerDay = 5000.0
 
 type LoanService struct {
-	loanRepo    *repository.LoanRepository
-	bookRepo    *repository.BookRepository
-	invoiceRepo *repository.InvoiceRepository
+	loanRepository    *repository.LoanRepository
+	bookRepository    *repository.BookRepository
+	invoiceRepository *repository.InvoiceRepository
 }
 
 func NewLoanService(
-	lr *repository.LoanRepository,
-	br *repository.BookRepository,
-	ir *repository.InvoiceRepository,
+	loanRepository *repository.LoanRepository,
+	bookRepository *repository.BookRepository,
+	invoiceRepository *repository.InvoiceRepository,
 ) *LoanService {
 	return &LoanService{
-		loanRepo:    lr,
-		bookRepo:    br,
-		invoiceRepo: ir,
+		loanRepository:    loanRepository,
+		bookRepository:    bookRepository,
+		invoiceRepository: invoiceRepository,
 	}
 }
 
 func (s *LoanService) Borrow(ctx context.Context, visitorID, staffID, bookID int) error {
-	book, err := s.bookRepo.GetBookByID(ctx, bookID)
+	book, err := s.bookRepository.GetBookByID(ctx, bookID)
 	if err != nil {
 		return err
 	}
@@ -41,10 +41,10 @@ func (s *LoanService) Borrow(ctx context.Context, visitorID, staffID, bookID int
 		return fmt.Errorf("stok buku habis, peminjaman ditolak")
 	}
 
-	if err := s.loanRepo.Create(ctx, visitorID, staffID, bookID); err != nil {
+	if err := s.loanRepository.CreateLoan(ctx, visitorID, staffID, bookID); err != nil {
 		return err
 	}
-	if err := s.bookRepo.DecrementStock(ctx, bookID); err != nil {
+	if err := s.bookRepository.DecrementStock(ctx, bookID); err != nil {
 		return err
 	}
 
@@ -52,7 +52,7 @@ func (s *LoanService) Borrow(ctx context.Context, visitorID, staffID, bookID int
 }
 
 func (s *LoanService) Return(ctx context.Context, loanID int) (*float64, error) {
-	loan, err := s.loanRepo.GetByID(ctx, loanID)
+	loan, err := s.loanRepository.GetLoanByID(ctx, loanID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,22 +63,19 @@ func (s *LoanService) Return(ctx context.Context, loanID int) (*float64, error) 
 		return nil, fmt.Errorf("buku sudah dikembalikan")
 	}
 
-	if err := s.loanRepo.Return(ctx, loanID); err != nil {
+	if err := s.loanRepository.ReturnLoan(ctx, loanID); err != nil {
 		return nil, err
 	}
-	if err := s.bookRepo.IncrementStock(ctx, loan.BookID); err != nil {
+	if err := s.bookRepository.IncrementStock(ctx, loan.BookID); err != nil {
 		return nil, err
 	}
 
 	now := time.Now()
 	if now.After(loan.DueDate) {
-		daysLate := int(now.Sub(loan.DueDate).Hours() / 24)
-		if daysLate < 1 {
-			daysLate = 1
-		}
+		daysLate := max(int(now.Sub(loan.DueDate).Hours()/24), 1)
 		fine := float64(daysLate) * FinePerDay
 
-		if err := s.invoiceRepo.Create(ctx, loan.VisitorID, loanID, fine); err != nil {
+		if err := s.invoiceRepository.CreateInvoice(ctx, loan.VisitorID, loanID, fine); err != nil {
 			return nil, fmt.Errorf("buku dikembalikan, tapi gagal membuat invoice: %w", err)
 		}
 
@@ -89,7 +86,7 @@ func (s *LoanService) Return(ctx context.Context, loanID int) (*float64, error) 
 }
 
 func (s *LoanService) GetActiveByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
-	loans, err := s.loanRepo.GetActiveByVisitorID(ctx, visitorID)
+	loans, err := s.loanRepository.GetActiveLoansByVisitorID(ctx, visitorID)
 	if err != nil {
 		return nil, err
 	}

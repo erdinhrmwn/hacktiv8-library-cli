@@ -18,22 +18,33 @@ func NewUserService(userRepository *repository.UserRepository) *UserService {
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, id int) (*model.User, error) {
-	user, err := s.userRepository.FindByID(ctx, id)
+	user, err := s.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if user == nil || user.ID == 0 {
+	if user.ID == 0 {
 		return nil, fmt.Errorf("user tidak ditemukan")
 	}
 	return user, nil
 }
 
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return s.userRepository.FindByEmail(ctx, email)
+	user, err := s.userRepository.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if user.ID == 0 {
+		return nil, nil
+	}
+	return user, nil
 }
 
-func (s *UserService) GetUserByRole(ctx context.Context, role string) ([]*model.User, error) {
-	return s.userRepository.FindByRole(ctx, role)
+func (s *UserService) GetUserByRole(ctx context.Context, role string) ([]model.User, error) {
+	users, err := s.userRepository.GetUsersByRole(ctx, role)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *model.User) error {
@@ -53,7 +64,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *model.User) error {
 	}
 	user.Password = hashed
 
-	return s.userRepository.Save(ctx, user)
+	return s.userRepository.CreateUser(ctx, user)
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, user *model.User) error {
@@ -67,15 +78,15 @@ func (s *UserService) UpdateUser(ctx context.Context, user *model.User) error {
 		return fmt.Errorf("role tidak valid")
 	}
 
-	existing, err := s.userRepository.FindByID(ctx, user.ID)
+	existing, err := s.userRepository.GetUserByID(ctx, user.ID)
 	if err != nil {
 		return err
 	}
-	if existing == nil || existing.ID == 0 {
+	if existing.ID == 0 {
 		return fmt.Errorf("user tidak ditemukan")
 	}
 
-	return s.userRepository.Update(ctx, user)
+	return s.userRepository.UpdateUser(ctx, user)
 }
 
 func (s *UserService) ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error {
@@ -86,11 +97,11 @@ func (s *UserService) ChangePassword(ctx context.Context, id int, oldPassword, n
 		return fmt.Errorf("password minimal 5 karakter")
 	}
 
-	user, err := s.userRepository.FindByID(ctx, id)
+	user, err := s.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	if user == nil || user.ID == 0 {
+	if user.ID == 0 {
 		return fmt.Errorf("user tidak ditemukan")
 	}
 
@@ -104,17 +115,17 @@ func (s *UserService) ChangePassword(ctx context.Context, id int, oldPassword, n
 	}
 	user.Password = hashed
 
-	return s.userRepository.Update(ctx, user)
+	return s.userRepository.UpdateUser(ctx, user)
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int) error {
-	existing, err := s.userRepository.FindByID(ctx, id)
+	existing, err := s.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	if existing == nil || existing.ID == 0 {
+	if existing.ID == 0 {
 		return fmt.Errorf("user tidak ditemukan")
 	}
 
-	return s.userRepository.Delete(ctx, id)
+	return s.userRepository.DeleteUser(ctx, id)
 }
