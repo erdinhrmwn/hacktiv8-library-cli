@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/config"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/container"
@@ -24,8 +25,12 @@ func main() {
 	}
 	defer db.Close()
 
-	app := container.New(db)
+	fmt.Println()
+	fmt.Println(strings.Repeat("═", 50))
+	fmt.Println("   📚  HACKTIV8 LIBRARY CLI  —  v1.0.0")
+	fmt.Println(strings.Repeat("═", 50))
+	fmt.Println()
 
-	fmt.Println("📚 Hacktiv8 Library CLI — v0.1.0")
+	app := container.New(db)
 	app.Run(ctx)
 }
