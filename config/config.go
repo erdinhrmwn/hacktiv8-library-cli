@@ -17,9 +17,9 @@ type Config struct {
 	DBName     string
 }
 
-// user:password@tcp(host:port)/dbname
+// user:password@tcp(host:port)/dbname?parseTime=true
 func (c Config) DatabaseDSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
 		c.DBUser,
 		c.DBPassword,
 		c.DBHost,
