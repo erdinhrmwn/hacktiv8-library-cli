@@ -99,3 +99,47 @@ func (r *InvoiceRepository) GetUnpaidInvoices(ctx context.Context) ([]model.Invo
 	}
 	return invoices, rows.Err()
 }
+
+func (r *InvoiceRepository) GetTotalPaidFines(ctx context.Context) (float64, error) {
+	var total sql.NullFloat64
+	err := r.db.QueryRowContext(ctx,
+		`SELECT SUM(amount) FROM invoices WHERE status = 'paid'`).Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	if total.Valid {
+		return total.Float64, nil
+	}
+	return 0, nil
+}
+
+type UserFine struct {
+	UserID    int
+	Name      string
+	TotalFine float64
+}
+
+func (r *InvoiceRepository) GetTopUsersByFines(ctx context.Context) ([]UserFine, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT u.id, u.name, COALESCE(SUM(i.amount), 0) as total_fine
+		FROM users u
+		JOIN invoices i ON i.user_id = u.id
+		WHERE i.status = 'paid'
+		GROUP BY u.id, u.name
+		ORDER BY total_fine DESC
+		LIMIT 5`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []UserFine
+	for rows.Next() {
+		var uf UserFine
+		if err := rows.Scan(&uf.UserID, &uf.Name, &uf.TotalFine); err != nil {
+			return nil, err
+		}
+		results = append(results, uf)
+	}
+	return results, rows.Err()
+}

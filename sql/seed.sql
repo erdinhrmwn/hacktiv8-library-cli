@@ -25,3 +25,49 @@ INSERT INTO books (isbn, title, author_id, genre, stock) VALUES
 ('978-0547928203', 'The Hobbit', 3, 'Fantasy', 5),
 ('978-9793062792', 'Laskar Pelangi', 4, 'Slice of Life', 4),
 ('978-9799731234', 'Bumi Manusia', 5, 'Romance', 3);
+
+-- Loan seed data: John (id=2) & Jane (id=3), Staff (id=1)
+
+INSERT INTO loans (visitor_id, staff_id, book_id, borrow_date, due_date, return_date, status) VALUES
+-- John: Harry Potter 1 - returned on time
+(2, 1, 1, DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'returned'),
+
+-- Jane: 1984 - returned late (3 days)
+(3, 1, 3, DATE_SUB(NOW(), INTERVAL 14 DAY), DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), 'returned'),
+
+-- John: Animal Farm - returned late (5 days)
+(2, 1, 4, DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 'returned'),
+
+-- John: Harry Potter 1 (again) - returned late (2 days)
+(2, 1, 1, DATE_SUB(NOW(), INTERVAL 12 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY), 'returned'),
+
+-- Jane: Harry Potter 1 - returned late (1 day)
+(3, 1, 1, DATE_SUB(NOW(), INTERVAL 9 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 'returned'),
+
+-- Jane: The Hobbit - still active
+(3, 1, 6, DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL 4 DAY), NULL, 'active'),
+
+-- John: LOTR - still active
+(2, 1, 5, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(NOW(), INTERVAL 5 DAY), NULL, 'active');
+
+-- Invoices for late returns (Rp5,000/day)
+
+INSERT INTO invoices (user_id, loan_id, amount, issue_date, status) VALUES
+-- Jane: 1984 late 3 days = Rp15,000 (paid)
+(3, 2, 15000, DATE_SUB(NOW(), INTERVAL 4 DAY), 'paid'),
+
+-- John: Animal Farm late 5 days = Rp25,000 (unpaid)
+(2, 3, 25000, DATE_SUB(NOW(), INTERVAL 5 DAY), 'unpaid'),
+
+-- John: Harry Potter 1 (2nd) late 2 days = Rp10,000 (paid)
+(2, 4, 10000, DATE_SUB(NOW(), INTERVAL 3 DAY), 'paid'),
+
+-- Jane: Harry Potter 1 late 1 day = Rp5,000 (paid)
+(3, 5, 5000, DATE_SUB(NOW(), INTERVAL 1 DAY), 'paid');
+
+-- Payments for paid invoices
+
+INSERT INTO payments (invoice_id, amount, date, method) VALUES
+(1, 15000, DATE_SUB(NOW(), INTERVAL 4 DAY), 'cash'),
+(3, 10000, DATE_SUB(NOW(), INTERVAL 3 DAY), 'transfer'),
+(4, 5000, DATE_SUB(NOW(), INTERVAL 1 DAY), 'cash');

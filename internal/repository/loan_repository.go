@@ -120,3 +120,33 @@ func (r *LoanRepository) GetActiveLoansByVisitorID(ctx context.Context, visitorI
 	}
 	return loans, rows.Err()
 }
+
+type MostBorrowedBook struct {
+	BookID      int
+	Title       string
+	BorrowCount int
+}
+
+func (r *LoanRepository) GetMostBorrowedBooks(ctx context.Context) ([]MostBorrowedBook, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT b.id, b.title, COUNT(l.id) as borrow_count
+		FROM books b
+		JOIN loans l ON l.book_id = b.id
+		GROUP BY b.id, b.title
+		ORDER BY borrow_count DESC
+		LIMIT 10`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []MostBorrowedBook
+	for rows.Next() {
+		var m MostBorrowedBook
+		if err := rows.Scan(&m.BookID, &m.Title, &m.BorrowCount); err != nil {
+			return nil, err
+		}
+		results = append(results, m)
+	}
+	return results, rows.Err()
+}
