@@ -148,8 +148,8 @@ func TestStaffFlow(t *testing.T) {
 		}
 	})
 
-	// Return book before due - no invoice
-	t.Run("Return book before due (no invoice)", func(t *testing.T) {
+	// Return book before due date - no invoice
+	t.Run("Return book before due date (no invoice)", func(t *testing.T) {
 		fine, err := loanCtrl.ReturnBook(ctx, loanID)
 		if err != nil {
 			t.Fatal("gagal return:", err)
@@ -165,13 +165,14 @@ func TestStaffFlow(t *testing.T) {
 		}
 	})
 
-	// Borrow again, then return after due date
-	t.Run("Borrow again for late return test", func(t *testing.T) {
-		loanCtrl.BorrowBook(ctx, visitorID, staffID, newBookID)
-	})
-
 	// Return after due date - invoice must be created
 	t.Run("Return book after due date (invoice created)", func(t *testing.T) {
+		// Borrow book first
+		err := loanCtrl.BorrowBook(ctx, visitorID, staffID, newBookID)
+		if err != nil {
+			t.Fatal("gagal pinjam:", err)
+		}
+
 		loans, _ := loanCtrl.GetActiveByVisitorID(ctx, visitorID)
 		if len(loans) == 0 {
 			t.Fatal("tidak ada loan aktif")
