@@ -6,12 +6,24 @@
 
 ## ✨ Fitur
 
-- 🔐 **Multi-Role Authentication** — Login aman dengan hashing password. Peran `staff` (admin) dan `visitor` (pengunjung).
-- 📦 **Manajemen Katalog** — Kelola data `books` dan `authors` beserta relasi antar keduanya.
-- 🔄 **Peminjaman & Pengembalian** — Stok buku otomatis berkurang/tambah saat transaksi pinjam-kembali.
-- 💰 **Denda Otomatis (Invoicing)** — Deteksi keterlambatan dan buat tagihan (`invoices`) secara otomatis untuk pengunjung.
-- 💳 **Pembayaran** — Catat pembayaran denda lengkap dengan struk.
-- 📊 **Audit Trail** — Setiap aktivitas penting (login, CRUD buku, dsb.) tercatat di tabel `activity_logs`.
+- 🔐 **Multi-Role Authentication** — Login aman dengan bcrypt hashing. Peran `staff` dan `visitor` dengan dashboard berbeda.
+- 📦 **Manajemen Katalog** — CRUD `books` dan `authors`, validasi ISBN unique & stok.
+- 🔄 **Peminjaman & Pengembalian** — Stok otomatis berkurang/tambah. Due date 7 hari.
+- 💰 **Denda Otomatis** — Deteksi keterlambatan, auto-create `invoices` dengan denda Rp5.000/hari.
+- 💳 **Pembayaran** — Bayar tagihan via `cash`/`transfer`, status otomatis `paid`.
+- 📊 **Audit Trail** — Semua aksi penting tercatat di `activity_logs` via goroutine (non-blocking).
+
+---
+
+## 🏗️ Arsitektur
+
+```
+cmd/app/main.go
+  └─ container (DI wiring)
+       ├─ controller   ← input validation
+       ├─ service      ← business logic
+       └─ repository   ← database access
+```
 
 ---
 
@@ -19,58 +31,51 @@
 
 - **Bahasa** — [Go](https://golang.org) 1.24+
 - **Database** — [MySQL](https://dev.mysql.com/downloads/)
-- **CLI Interaktif** — [promptui](https://github.com/manifoldco/promptui)
-- **Tabel Terminal** — [tablewriter](https://github.com/olekukonko/tablewriter)
-- **Env Loader** — [godotenv](https://github.com/joho/godotenv)
+- **CLI** — [promptui](https://github.com/manifoldco/promptui) + [tablewriter](https://github.com/olekukonko/tablewriter)
+- **Auth** — [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt)
+- **Config** — [godotenv](https://github.com/joho/godotenv)
 
 ---
 
-## 🗄️ Skema Database
+## 🗄️ Database
 
-Aplikasi menggunakan **7 tabel** utama:
+7 tabel dengan foreign key constraint:
 
 | # | Tabel | Deskripsi |
 |---|---|---|
-| 1 | `users` | Data pengunjung dan staf |
-| 2 | `authors` | Data penulis buku |
-| 3 | `books` | Katalog buku fisik |
-| 4 | `loans` | Transaksi peminjaman buku |
-| 5 | `invoices` | Tagihan / denda keterlambatan |
-| 6 | `payments` | Transaksi pembayaran tagihan |
-| 7 | `activity_logs` | Log riwayat aktivitas sistem |
+| 1 | `users` | Staff & visitor (autentikasi) |
+| 2 | `authors` | Data penulis |
+| 3 | `books` | Katalog buku |
+| 4 | `loans` | Peminjaman |
+| 5 | `invoices` | Denda keterlambatan |
+| 6 | `payments` | Pembayaran invoice |
+| 7 | `activity_logs` | Audit trail |
 
-> ℹ️ Rancangan lengkap ERD dan relasi antar tabel tersedia di [`REQUIREMENTS.md`](REQUIREMENTS.md).
+> ℹ️ Skema lengkap: [`sql/schema.sql`](sql/schema.sql) | Navigasi menu: [`REQUIREMENTS.md`](REQUIREMENTS.md)
 
 ---
 
 ## 🚀 Instalasi
 
-### 1. Clone Repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/erdinhrmwn/hacktiv8-library-cli.git
 cd hacktiv8-library-cli
 ```
 
-### 2. Setup Database
-
-Buat database baru di MySQL, lalu jalankan skrip DDL:
+### 2. Database
 
 ```bash
-# Buat database (via MySQL CLI)
 mysql -u root -p -e "CREATE DATABASE library_db;"
-
-# Jalankan skrip schema
-mysql -u root -p library_db < schema.sql
+mysql -u root -p library_db < sql/schema.sql
 ```
 
-### 3. Konfigurasi Environment
+### 3. Environment
 
 ```bash
 cp .env.example .env
 ```
-
-Sesuaikan kredensial database di dalam file `.env`:
 
 ```ini
 DB_HOST=127.0.0.1
@@ -80,38 +85,40 @@ DB_PASSWORD=yourpassword
 DB_NAME=library_db
 ```
 
-### 4. Install Dependensi
+### 4. Dependensi
 
 ```bash
-go mod tidy
+make tidy
 ```
 
-### 5. Jalankan Aplikasi
+### 5. Jalankan
 
 ```bash
-go run main.go
+make run
 ```
 
 ---
 
 ## 🎮 Penggunaan
 
-Saat aplikasi dijalankan, kamu akan disambut menu **login**. Gunakan akun bawaan berikut (jika sudah melakukan *seeding*):
+Login dengan akun bawaan (dari seed data):
 
-- **Staff** — `admin@library.local` / `admin123`
-
-Navigasi dilakukan dengan **mengetik angka** pilihan menu, lalu tekan `Enter`.
+| Peran | Email | Password |
+|---|---|---|
+| Staff | `admin@library.com` | `password` |
+| Visitor | `visitor@library.com` | `password` |
 
 ---
 
-## 📦 Dependensi
+## 🧪 Testing
 
-- [**promptui**](https://github.com/manifoldco/promptui) — Membangun UI interaktif: menu, form input, dan seleksi di terminal.
-- [**tablewriter**](https://github.com/olekukonko/tablewriter) — Merender data dalam bentuk tabel yang rapi di terminal.
-- [**godotenv**](https://github.com/joho/godotenv) — Memuat konfigurasi dari file `.env` ke dalam environment variabel.
+```bash
+# Pastikan MySQL running
+make test
+```
 
 ---
 
 ## 📄 Lisensi
 
-MIT © 2026 — Lihat [`LICENSE`](LICENSE) untuk detail selengkapnya.
+MIT © 2026 — Lihat [`LICENSE`](LICENSE).

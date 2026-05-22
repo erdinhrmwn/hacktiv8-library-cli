@@ -1,0 +1,23 @@
+# Environment
+.env
+
+# macOS
+.DS_Store
+
+# Build output
+/bin/
+*.exe
+*.test
+*.out
+
+# Coverage
+coverage.out
+
+# Dependencies
+/vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
