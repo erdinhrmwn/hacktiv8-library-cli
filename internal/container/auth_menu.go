@@ -11,7 +11,8 @@ import (
 )
 
 type AuthMenu struct {
-	authController *controller.AuthController
+	authController      *controller.AuthController
+	activityController  *controller.ActivityController
 }
 
 func (m *AuthMenu) Main(ctx context.Context) *model.User {
@@ -71,6 +72,7 @@ func (m *AuthMenu) login(ctx context.Context) *model.User {
 			continue
 		}
 
+		go m.activityController.Log(context.Background(), "Login", fmt.Sprintf("%s login sebagai %s", user.Name, user.Role))
 		fmt.Printf("\n✅ Login berhasil — selamat datang, %s!\n\n", user.Name)
 		return user
 	}

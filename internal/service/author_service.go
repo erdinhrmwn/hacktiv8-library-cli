@@ -17,7 +17,11 @@ func NewAuthorService(authorRepository *repository.AuthorRepository) *AuthorServ
 }
 
 func (s *AuthorService) GetAllAuthors(ctx context.Context) ([]model.Author, error) {
-	return s.authorRepository.GetAllAuthors(ctx)
+	authors, err := s.authorRepository.GetAllAuthors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return authors, nil
 }
 
 func (s *AuthorService) GetAuthorByID(ctx context.Context, id int) (*model.Author, error) {
@@ -32,7 +36,11 @@ func (s *AuthorService) GetAuthorByID(ctx context.Context, id int) (*model.Autho
 }
 
 func (s *AuthorService) SearchAuthor(ctx context.Context, query string) ([]model.Author, error) {
-	return s.authorRepository.SearchAuthor(ctx, query)
+	authors, err := s.authorRepository.SearchAuthor(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return authors, nil
 }
 
 func (s *AuthorService) AddAuthor(ctx context.Context, author *model.Author) error {
@@ -72,5 +80,9 @@ func (s *AuthorService) DeleteAuthor(ctx context.Context, id int) error {
 }
 
 func (s *AuthorService) GetAuthorBooks(ctx context.Context, authorID int) ([]model.Book, error) {
-	return s.authorRepository.GetAuthorBooks(ctx, authorID)
+	books, err := s.authorRepository.GetAuthorBooks(ctx, authorID)
+	if err != nil {
+		return nil, err
+	}
+	return books, nil
 }

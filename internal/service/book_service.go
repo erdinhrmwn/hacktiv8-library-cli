@@ -18,7 +18,11 @@ func NewBookService(bookRepository *repository.BookRepository, authorRepository 
 }
 
 func (s *BookService) GetAllBooks(ctx context.Context) ([]model.Book, error) {
-	return s.bookRepository.GetAllBooks(ctx)
+	books, err := s.bookRepository.GetAllBooks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return books, nil
 }
 
 func (s *BookService) GetBookByID(ctx context.Context, id int) (*model.Book, error) {
@@ -33,7 +37,11 @@ func (s *BookService) GetBookByID(ctx context.Context, id int) (*model.Book, err
 }
 
 func (s *BookService) SearchBook(ctx context.Context, query string) ([]model.Book, error) {
-	return s.bookRepository.SearchBook(ctx, query)
+	books, err := s.bookRepository.SearchBook(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return books, nil
 }
 
 func (s *BookService) AddBook(ctx context.Context, book *model.Book) error {

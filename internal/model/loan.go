@@ -9,10 +9,10 @@ type Loan struct {
 	BookID     int
 	BorrowDate time.Time
 	DueDate    time.Time
-	ReturnDate *time.Time // pointer → nullable
-	Status     string     // "active" | "returned"
+	ReturnDate *time.Time
+	Status     string // "active" | "returned"
 
-	// Relasi — diisi manual lewat JOIN di repository
 	Visitor *User
+	Staff   *User
 	Book    *Book
 }

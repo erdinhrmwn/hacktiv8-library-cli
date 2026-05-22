@@ -18,11 +18,11 @@ func NewAuthService(userRepository *repository.UserRepository) *AuthService {
 }
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (*model.User, error) {
-	user, err := s.userRepository.FindByEmail(ctx, email)
+	user, err := s.userRepository.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
+	if user.ID == 0 {
 		return nil, fmt.Errorf("Email atau Password salah")
 	}
 	if !utils.VerifyPassword(password, user.Password) {

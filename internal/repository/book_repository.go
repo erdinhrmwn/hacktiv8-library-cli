@@ -130,3 +130,13 @@ func (r *BookRepository) DeleteBook(ctx context.Context, id int) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM books WHERE id = ?`, id)
 	return err
 }
+
+func (r *BookRepository) DecrementStock(ctx context.Context, id int) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE books SET stock = stock - 1 WHERE id = ? AND stock > 0`, id)
+	return err
+}
+
+func (r *BookRepository) IncrementStock(ctx context.Context, id int) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE books SET stock = stock + 1 WHERE id = ?`, id)
+	return err
+}
