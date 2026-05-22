@@ -25,73 +25,7 @@ func NewInvoiceRepository(db *sql.DB) *InvoiceRepository {
 	return &InvoiceRepository{db: db}
 }
 
-func (r *InvoiceRepository) GetAllInvoices(ctx context.Context) ([]model.Invoice, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT * FROM invoices")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var invoices []model.Invoice
-	for rows.Next() {
-		var i model.Invoice
-		if err := rows.Scan(&i.ID, &i.UserID, &i.LoanID, &i.Amount, &i.IssueDate, &i.Status); err != nil {
-			return nil, err
-		}
-		invoices = append(invoices, i)
-	}
-	return invoices, rows.Err()
-}
-
-func (r *InvoiceRepository) GetInvoiceByID(ctx context.Context, id int) (*model.Invoice, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT * FROM invoices WHERE id = ?`, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var i model.Invoice
-	if rows.Next() {
-		if err := rows.Scan(&i.ID, &i.UserID, &i.LoanID, &i.Amount, &i.IssueDate, &i.Status); err != nil {
-			return nil, err
-		}
-	}
-	return &i, rows.Err()
-}
-
-func (r *InvoiceRepository) GetUnpaidInvoicesByUserID(ctx context.Context, userID int) ([]model.Invoice, error) {
-	rows, err := r.db.QueryContext(ctx,
-		`SELECT * FROM invoices WHERE user_id = ? AND status = 'unpaid'`, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var invoices []model.Invoice
-	for rows.Next() {
-		var i model.Invoice
-		if err := rows.Scan(&i.ID, &i.UserID, &i.LoanID, &i.Amount, &i.IssueDate, &i.Status); err != nil {
-			return nil, err
-		}
-		invoices = append(invoices, i)
-	}
-	return invoices, rows.Err()
-}
-
-func (r *InvoiceRepository) CreateInvoice(ctx context.Context, userID, loanID int, amount float64) error {
-	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO invoices (user_id, loan_id, amount, issue_date, status) VALUES (?, ?, ?, ?, 'unpaid')`,
-		userID, loanID, amount, time.Now())
-	return err
-}
-
-func (r *InvoiceRepository) MarkPaid(ctx context.Context, id int) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE invoices SET status = 'paid' WHERE id = ?`, id)
-	return err
-}
-
-func (r *InvoiceRepository) GetAllInvoicesWithDetails(ctx context.Context) ([]InvoiceDetail, error) {
+func (r *InvoiceRepository) GetAllInvoices(ctx context.Context) ([]InvoiceDetail, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT i.id, u.name, b.title, i.amount, i.status, i.issue_date
 		FROM invoices i
@@ -115,22 +49,58 @@ func (r *InvoiceRepository) GetAllInvoicesWithDetails(ctx context.Context) ([]In
 	return result, rows.Err()
 }
 
-func (r *InvoiceRepository) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT * FROM invoices WHERE status = 'unpaid'`)
+func (r *InvoiceRepository) GetInvoiceByID(ctx context.Context, id int) (*model.Invoice, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT * FROM invoices WHERE id = ?`, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var invoices []model.Invoice
-	for rows.Next() {
-		var i model.Invoice
+	var i model.Invoice
+	if rows.Next() {
 		if err := rows.Scan(&i.ID, &i.UserID, &i.LoanID, &i.Amount, &i.IssueDate, &i.Status); err != nil {
 			return nil, err
 		}
-		invoices = append(invoices, i)
 	}
-	return invoices, rows.Err()
+	return &i, rows.Err()
+}
+
+func (r *InvoiceRepository) GetUnpaidInvoicesByUserID(ctx context.Context, userID int) ([]InvoiceDetail, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT i.id, u.name, b.title, i.amount, i.status, i.issue_date
+		FROM invoices i
+		JOIN users u ON u.id = i.user_id
+		JOIN loans l ON l.id = i.loan_id
+		JOIN books b ON b.id = l.book_id
+		WHERE i.user_id = ? AND i.status = 'unpaid'
+		ORDER BY i.id`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []InvoiceDetail
+	for rows.Next() {
+		var d InvoiceDetail
+		if err := rows.Scan(&d.ID, &d.UserName, &d.BookTitle, &d.Amount, &d.Status, &d.IssueDate); err != nil {
+			return nil, err
+		}
+		result = append(result, d)
+	}
+	return result, rows.Err()
+}
+
+func (r *InvoiceRepository) CreateInvoice(ctx context.Context, userID, loanID int, amount float64) error {
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO invoices (user_id, loan_id, amount, issue_date, status) VALUES (?, ?, ?, ?, 'unpaid')`,
+		userID, loanID, amount, time.Now())
+	return err
+}
+
+func (r *InvoiceRepository) MarkPaid(ctx context.Context, id int) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE invoices SET status = 'paid' WHERE id = ?`, id)
+	return err
 }
 
 func (r *InvoiceRepository) GetTotalPaidFines(ctx context.Context) (float64, error) {

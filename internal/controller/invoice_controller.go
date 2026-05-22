@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/service"
 )
@@ -17,21 +16,13 @@ func NewInvoiceController(invoiceService *service.InvoiceService) *InvoiceContro
 	return &InvoiceController{invoiceService: invoiceService}
 }
 
-func (c *InvoiceController) GetUnpaidByUserID(ctx context.Context, userID int) ([]model.Invoice, error) {
+func (c *InvoiceController) GetUnpaidByUserID(ctx context.Context, userID int) ([]repository.InvoiceDetail, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("ID user tidak valid")
 	}
 	return c.invoiceService.GetUnpaidByUserID(ctx, userID)
 }
 
-func (c *InvoiceController) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
-	return c.invoiceService.GetUnpaidInvoices(ctx)
-}
-
-func (c *InvoiceController) GetAllInvoices(ctx context.Context) ([]model.Invoice, error) {
+func (c *InvoiceController) GetAllInvoices(ctx context.Context) ([]repository.InvoiceDetail, error) {
 	return c.invoiceService.GetAllInvoices(ctx)
-}
-
-func (c *InvoiceController) GetAllInvoicesWithDetails(ctx context.Context) ([]repository.InvoiceDetail, error) {
-	return c.invoiceService.GetAllInvoicesWithDetails(ctx)
 }

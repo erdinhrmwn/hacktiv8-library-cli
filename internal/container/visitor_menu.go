@@ -264,12 +264,7 @@ func (m *VisitorMenu) showMyInvoices(ctx context.Context) {
 	t := tablewriter.NewWriter(os.Stdout)
 	t.Header([]string{"ID", "Judul Buku", "Denda", "Tgl Terbit", "Status"})
 	for _, i := range invoices {
-		bookTitle := "-"
-		loan, _ := m.loanController.GetLoanByID(ctx, i.LoanID)
-		if loan != nil && loan.Book != nil {
-			bookTitle = loan.Book.Title
-		}
-		t.Append([]any{i.ID, bookTitle, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
+		t.Append([]any{i.ID, i.BookTitle, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
 	}
 	t.Render()
 	fmt.Println()

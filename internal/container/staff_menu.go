@@ -649,7 +649,7 @@ func (m *StaffMenu) showMostBorrowedBooks(ctx context.Context) {
 func (m *StaffMenu) showTotalFines(ctx context.Context) {
 	fmt.Println("\n📋 Semua Invoice:")
 
-	invoices, err := m.invoiceController.GetAllInvoicesWithDetails(ctx)
+	invoices, err := m.invoiceController.GetAllInvoices(ctx)
 	if err != nil {
 		fmt.Printf("\n❌ Gagal ambil data: %v\n\n", err)
 		return
