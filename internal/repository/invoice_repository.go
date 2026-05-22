@@ -81,3 +81,21 @@ func (r *InvoiceRepository) MarkPaid(ctx context.Context, id int) error {
 		`UPDATE invoices SET status = 'paid' WHERE id = ?`, id)
 	return err
 }
+
+func (r *InvoiceRepository) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT * FROM invoices WHERE status = 'unpaid'`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var invoices []model.Invoice
+	for rows.Next() {
+		var i model.Invoice
+		if err := rows.Scan(&i.ID, &i.UserID, &i.LoanID, &i.Amount, &i.IssueDate, &i.Status); err != nil {
+			return nil, err
+		}
+		invoices = append(invoices, i)
+	}
+	return invoices, rows.Err()
+}

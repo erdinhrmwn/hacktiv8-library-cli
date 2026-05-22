@@ -16,7 +16,7 @@ func NewPaymentRepository(db *sql.DB) *PaymentRepository {
 	return &PaymentRepository{db: db}
 }
 
-func (r *PaymentRepository) Create(ctx context.Context, payment *model.Payment) error {
+func (r *PaymentRepository) CreatePayment(ctx context.Context, payment *model.Payment) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO payments (invoice_id, amount, date, method) VALUES (?, ?, ?, ?)`,
 		payment.InvoiceID, payment.Amount, time.Now(), payment.Method)

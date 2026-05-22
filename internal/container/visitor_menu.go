@@ -18,6 +18,8 @@ type VisitorMenu struct {
 	bookController     *controller.BookController
 	userController     *controller.UserController
 	activityController *controller.ActivityController
+	loanController     *controller.LoanController
+	invoiceController  *controller.InvoiceController
 
 	currentUser *model.User
 }
@@ -46,9 +48,9 @@ func (m *VisitorMenu) Dashboard(ctx context.Context, user *model.User) {
 		case "Cari & Lihat Katalog Buku":
 			m.Catalog(ctx)
 		case "Buku yang Sedang Dipinjam (My Loans)":
-			fmt.Printf("\n🚧 My Loans — coming soon\n\n")
+			m.showMyLoans(ctx)
 		case "Cek Tagihan Denda (My Invoices)":
-			fmt.Printf("\n🚧 My Invoices — coming soon\n\n")
+			m.showMyInvoices(ctx)
 		case "Pengaturan Akun":
 			m.Account(ctx)
 		case "Logout":
@@ -220,4 +222,46 @@ func (m *VisitorMenu) changePassword(ctx context.Context) {
 
 	go m.activityController.Log(context.Background(), "Change Password", fmt.Sprintf("%s mengganti password", m.currentUser.Email))
 	fmt.Printf("\n✅ Password berhasil diganti\n\n")
+}
+
+func (m *VisitorMenu) showMyLoans(ctx context.Context) {
+	loans, err := m.loanController.GetActiveByVisitorID(ctx, m.currentUser.ID)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar peminjaman: %v\n\n", err)
+		return
+	}
+
+	if len(loans) == 0 {
+		fmt.Printf("\n📭 Kamu tidak sedang meminjam buku\n\n")
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "Book ID", "Borrow", "Due"})
+	for _, l := range loans {
+		t.Append([]any{l.ID, l.BookID, l.BorrowDate.Format("2006-01-02"), l.DueDate.Format("2006-01-02")})
+	}
+	t.Render()
+	fmt.Println()
+}
+
+func (m *VisitorMenu) showMyInvoices(ctx context.Context) {
+	invoices, err := m.invoiceController.GetUnpaidByUserID(ctx, m.currentUser.ID)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar tagihan: %v\n\n", err)
+		return
+	}
+
+	if len(invoices) == 0 {
+		fmt.Printf("\n📭 Tidak ada tagihan denda\n\n")
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "Amount", "Issue Date", "Status"})
+	for _, i := range invoices {
+		t.Append([]any{i.ID, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
+	}
+	t.Render()
+	fmt.Println()
 }

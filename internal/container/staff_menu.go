@@ -14,10 +14,13 @@ import (
 )
 
 type StaffMenu struct {
-	authorController  *controller.AuthorController
-	bookController    *controller.BookController
-	userController    *controller.UserController
+	authorController   *controller.AuthorController
+	bookController     *controller.BookController
+	userController     *controller.UserController
 	activityController *controller.ActivityController
+	loanController     *controller.LoanController
+	invoiceController  *controller.InvoiceController
+	paymentController  *controller.PaymentController
 
 	currentUser *model.User
 }
@@ -50,11 +53,11 @@ func (m *StaffMenu) Dashboard(ctx context.Context, user *model.User) {
 		case "Kelola Katalog (Buku & Penulis)":
 			m.Catalog(ctx)
 		case "Proses Peminjaman (Borrow Book)":
-			fmt.Printf("\n🚧 Proses Peminjaman — coming soon\n\n")
+			m.borrowBook(ctx)
 		case "Proses Pengembalian (Return Book & Auto-Invoice)":
-			fmt.Printf("\n🚧 Proses Pengembalian — coming soon\n\n")
+			m.returnBook(ctx)
 		case "Proses Pembayaran Denda (Payment)":
-			fmt.Printf("\n🚧 Proses Pembayaran Denda — coming soon\n\n")
+			m.payInvoice(ctx)
 		case "Pantau Log Aktivitas (Activity Logs)":
 			m.showActivityLogs(ctx)
 		case "Logout":
@@ -374,4 +377,169 @@ func (m *StaffMenu) showActivityLogs(ctx context.Context) {
 	}
 	t.Render()
 	fmt.Println()
+}
+
+func (m *StaffMenu) borrowBook(ctx context.Context) {
+	visitors, err := m.userController.GetByRole(ctx, "visitor")
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar visitor: %v\n\n", err)
+		return
+	}
+	if len(visitors) == 0 {
+		fmt.Printf("\n📭 Belum ada visitor terdaftar\n\n")
+		return
+	}
+
+	visitorLabels := make([]string, len(visitors))
+	for i, v := range visitors {
+		visitorLabels[i] = fmt.Sprintf("%s (%s)", v.Name, v.Email)
+	}
+	idx, _, err := utils.SelectInput("Pilih Visitor", visitorLabels)
+	if err != nil {
+		return
+	}
+	selectedVisitor := visitors[idx]
+
+	books, err := m.bookController.GetAllBooks(ctx)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar buku: %v\n\n", err)
+		return
+	}
+
+	var availableBooks []model.Book
+	for _, b := range books {
+		if b.Stock > 0 {
+			availableBooks = append(availableBooks, b)
+		}
+	}
+	if len(availableBooks) == 0 {
+		fmt.Printf("\n📭 Tidak ada buku tersedia\n\n")
+		return
+	}
+
+	bookLabels := make([]string, len(availableBooks))
+	for i, b := range availableBooks {
+		bookLabels[i] = fmt.Sprintf("%s (stok: %d)", b.Title, b.Stock)
+	}
+	idx, _, err = utils.SelectInput("Pilih Buku", bookLabels)
+	if err != nil {
+		return
+	}
+	selectedBook := availableBooks[idx]
+
+	if err := m.loanController.BorrowBook(ctx, selectedVisitor.ID, m.currentUser.ID, selectedBook.ID); err != nil {
+		fmt.Printf("\n❌ Gagal meminjamkan buku: %v\n\n", err)
+		return
+	}
+
+	go m.activityController.Log(context.Background(), "Borrow Book", fmt.Sprintf("%s meminjamkan %s ke %s", m.currentUser.Name, selectedBook.Title, selectedVisitor.Name))
+	fmt.Printf("\n✅ %s berhasil dipinjamkan ke %s\n\n", selectedBook.Title, selectedVisitor.Name)
+}
+
+func (m *StaffMenu) returnBook(ctx context.Context) {
+	loans, err := m.loanController.GetAll(ctx)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar peminjaman: %v\n\n", err)
+		return
+	}
+
+	var activeLoans []model.Loan
+	for _, l := range loans {
+		if l.Status == "active" {
+			activeLoans = append(activeLoans, l)
+		}
+	}
+	if len(activeLoans) == 0 {
+		fmt.Printf("\n📭 Tidak ada peminjaman aktif\n\n")
+		return
+	}
+
+	loanLabels := make([]string, len(activeLoans))
+	for i, l := range activeLoans {
+		loanLabels[i] = fmt.Sprintf("#%d - Visitor:%d Buku:%d Due:%s", l.ID, l.VisitorID, l.BookID, l.DueDate.Format("2006-01-02"))
+	}
+	idx, _, err := utils.SelectInput("Pilih Peminjaman", loanLabels)
+	if err != nil {
+		return
+	}
+	selectedLoan := activeLoans[idx]
+
+	fine, err := m.loanController.ReturnBook(ctx, selectedLoan.ID)
+	if err != nil {
+		if fine != nil {
+			fmt.Printf("\n⚠️  %v\n\n", err)
+			return
+		}
+		fmt.Printf("\n❌ Gagal mengembalikan buku: %v\n\n", err)
+		return
+	}
+
+	go m.activityController.Log(context.Background(), "Return Book", fmt.Sprintf("%s memproses pengembalian loan #%d", m.currentUser.Name, selectedLoan.ID))
+	fmt.Printf("\n✅ Buku berhasil dikembalikan\n\n")
+}
+
+func (m *StaffMenu) payInvoice(ctx context.Context) {
+	visitors, err := m.userController.GetByRole(ctx, "visitor")
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar visitor: %v\n\n", err)
+		return
+	}
+	if len(visitors) == 0 {
+		fmt.Printf("\n📭 Belum ada visitor terdaftar\n\n")
+		return
+	}
+
+	visitorLabels := make([]string, len(visitors))
+	for i, v := range visitors {
+		visitorLabels[i] = fmt.Sprintf("%s (%s)", v.Name, v.Email)
+	}
+	idx, _, err := utils.SelectInput("Pilih Visitor", visitorLabels)
+	if err != nil {
+		return
+	}
+	selectedVisitor := visitors[idx]
+
+	invoices, err := m.invoiceController.GetUnpaidByUserID(ctx, selectedVisitor.ID)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil daftar invoice: %v\n\n", err)
+		return
+	}
+
+	if len(invoices) == 0 {
+		fmt.Printf("\n📭 %s tidak memiliki tagihan\n\n", selectedVisitor.Name)
+		return
+	}
+
+	invoiceLabels := make([]string, len(invoices))
+	for i, inv := range invoices {
+		invoiceLabels[i] = fmt.Sprintf("#%d - Rp%.0f (%s)", inv.ID, inv.Amount, inv.Status)
+	}
+	idx, _, err = utils.SelectInput("Pilih Invoice", invoiceLabels)
+	if err != nil {
+		return
+	}
+	selected := invoices[idx]
+
+	amountStr, err := utils.AskInput(fmt.Sprintf("Jumlah Pembayaran (tagihan: Rp%.0f)", selected.Amount))
+	if err != nil {
+		return
+	}
+	amount, err := strconv.ParseFloat(amountStr, 64)
+	if err != nil {
+		fmt.Printf("\n❌ Jumlah harus berupa angka\n\n")
+		return
+	}
+
+	_, method, err := utils.SelectInput("Metode Pembayaran", []string{"cash", "transfer"})
+	if err != nil {
+		return
+	}
+
+	if err := m.paymentController.PayInvoice(ctx, selected.ID, amount, method); err != nil {
+		fmt.Printf("\n❌ Gagal membayar invoice: %v\n\n", err)
+		return
+	}
+
+	go m.activityController.Log(context.Background(), "Pay Invoice", fmt.Sprintf("%s membayar invoice #%d untuk %s", m.currentUser.Name, selected.ID, selectedVisitor.Name))
+	fmt.Printf("\n✅ Pembayaran berhasil\n\n")
 }
