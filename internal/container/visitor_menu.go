@@ -195,7 +195,7 @@ func (m *VisitorMenu) changeName(ctx context.Context) {
 	}
 
 	m.currentUser.Name = newName
-	go m.activityController.Log(context.Background(), "Update Profile", fmt.Sprintf("%s mengubah nama menjadi %s", m.currentUser.Email, newName))
+	m.activityController.Log(ctx, "Update Profile", fmt.Sprintf("%s mengubah nama menjadi %s", m.currentUser.Email, newName))
 	fmt.Printf("\n✅ Nama berhasil diubah menjadi %s\n\n", newName)
 }
 
@@ -220,7 +220,7 @@ func (m *VisitorMenu) changePassword(ctx context.Context) {
 		return
 	}
 
-	go m.activityController.Log(context.Background(), "Change Password", fmt.Sprintf("%s mengganti password", m.currentUser.Email))
+	m.activityController.Log(ctx, "Change Password", fmt.Sprintf("%s mengganti password", m.currentUser.Email))
 	fmt.Printf("\n✅ Password berhasil diganti\n\n")
 }
 

@@ -72,7 +72,7 @@ func (m *AuthMenu) login(ctx context.Context) *model.User {
 			continue
 		}
 
-		go m.activityController.Log(context.Background(), "Login", fmt.Sprintf("%s login sebagai %s", user.Name, user.Role))
+		m.activityController.Log(ctx, "Login", fmt.Sprintf("%s login sebagai %s", user.Name, user.Role))
 		fmt.Printf("\n✅ Login berhasil — selamat datang, %s!\n\n", user.Name)
 		return user
 	}
