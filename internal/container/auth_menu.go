@@ -32,14 +32,13 @@ func (m *AuthMenu) Main(ctx context.Context) *model.User {
 	case "Login":
 		return m.login(ctx)
 	case "Daftar":
-		m.register(ctx)
-		return nil
+		return m.register(ctx)
 	default:
 		return nil
 	}
 }
 
-func (m *AuthMenu) register(ctx context.Context) {
+func (m *AuthMenu) register(ctx context.Context) *model.User {
 	prompt := promptui.Prompt{
 		Label: "Nama",
 		Validate: func(input string) error {
@@ -51,7 +50,7 @@ func (m *AuthMenu) register(ctx context.Context) {
 	}
 	name, err := prompt.Run()
 	if err != nil {
-		return
+		return nil
 	}
 
 	prompt = promptui.Prompt{
@@ -68,7 +67,7 @@ func (m *AuthMenu) register(ctx context.Context) {
 	}
 	email, err := prompt.Run()
 	if err != nil {
-		return
+		return nil
 	}
 
 	prompt = promptui.Prompt{
@@ -86,7 +85,7 @@ func (m *AuthMenu) register(ctx context.Context) {
 	}
 	password, err := prompt.Run()
 	if err != nil {
-		return
+		return nil
 	}
 
 	err = m.userController.Create(ctx, controller.CreateUserInput{
@@ -97,11 +96,12 @@ func (m *AuthMenu) register(ctx context.Context) {
 	})
 	if err != nil {
 		fmt.Printf("\n❌ Gagal mendaftar: %v\n\n", err)
-		return
+		return nil
 	}
 
 	go m.activityController.Log(context.Background(), "Register", fmt.Sprintf("%s mendaftar sebagai visitor", email))
-	fmt.Printf("\n✅ Pendaftaran berhasil! Silakan login.\n\n")
+	fmt.Printf("\n✅ Pendaftaran berhasil! Selamat datang, %s!\n\n", name)
+	return m.login(ctx)
 }
 
 func (m *AuthMenu) login(ctx context.Context) *model.User {
