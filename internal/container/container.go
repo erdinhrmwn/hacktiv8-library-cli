@@ -78,14 +78,14 @@ func (c *Container) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("\n👋 Selamat tinggal!")
+			fmt.Println("\n👋 Thanks for using our services!")
 			return
 		default:
 		}
 
 		user := c.AuthMenu.Main(ctx)
 		if user == nil {
-			fmt.Println("\n👋 Selamat tinggal!")
+			fmt.Println("\n👋 Thanks for using our services!")
 			return
 		}
 

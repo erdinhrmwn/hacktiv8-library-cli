@@ -549,22 +549,12 @@ func (m *StaffMenu) payInvoice(ctx context.Context) {
 	}
 	selected := invoices[idx]
 
-	amountStr, err := utils.AskInput(fmt.Sprintf("Jumlah Pembayaran (tagihan: Rp%.0f)", selected.Amount))
-	if err != nil {
-		return
-	}
-	amount, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		fmt.Printf("\n❌ Jumlah harus berupa angka\n\n")
-		return
-	}
-
 	_, method, err := utils.SelectInput("Metode Pembayaran", []string{"cash", "transfer"})
 	if err != nil {
 		return
 	}
 
-	if err := m.paymentController.PayInvoice(ctx, selected.ID, amount, method); err != nil {
+	if err := m.paymentController.PayInvoice(ctx, selected.ID, selected.Amount, method); err != nil {
 		fmt.Printf("\n❌ Gagal membayar invoice: %v\n\n", err)
 		return
 	}
