@@ -14,9 +14,10 @@ import (
 )
 
 type StaffMenu struct {
-	authorController *controller.AuthorController
-	bookController   *controller.BookController
-	userController   *controller.UserController
+	authorController  *controller.AuthorController
+	bookController    *controller.BookController
+	userController    *controller.UserController
+	activityController *controller.ActivityController
 
 	currentUser *model.User
 }
@@ -55,7 +56,7 @@ func (m *StaffMenu) Dashboard(ctx context.Context, user *model.User) {
 		case "Proses Pembayaran Denda (Payment)":
 			fmt.Printf("\n🚧 Proses Pembayaran Denda — coming soon\n\n")
 		case "Pantau Log Aktivitas (Activity Logs)":
-			fmt.Printf("\n🚧 Pantau Log Aktivitas — coming soon\n\n")
+			m.showActivityLogs(ctx)
 		case "Logout":
 			return
 		}
@@ -117,6 +118,7 @@ func (m *StaffMenu) registerVisitor(ctx context.Context) {
 		return
 	}
 
+	go m.activityController.Log(context.Background(), "Register Visitor", fmt.Sprintf("%s mendaftarkan visitor %s", m.currentUser.Name, name))
 	fmt.Printf("\n✅ Visitor berhasil didaftarkan\n\n")
 }
 
@@ -227,6 +229,7 @@ func (m *StaffMenu) addBook(ctx context.Context) {
 		fmt.Printf("\n❌ Gagal menambahkan buku: %v\n\n", err)
 		return
 	}
+	go m.activityController.Log(context.Background(), "Add Book", fmt.Sprintf("%s menambahkan buku %s", m.currentUser.Name, title))
 	fmt.Printf("\n✅ Buku berhasil ditambahkan\n\n")
 }
 
@@ -270,6 +273,7 @@ func (m *StaffMenu) updateBookStock(ctx context.Context) {
 		fmt.Printf("\n❌ Gagal mengubah stok: %v\n\n", err)
 		return
 	}
+	go m.activityController.Log(context.Background(), "Update Book", fmt.Sprintf("%s mengubah stok %s menjadi %d", m.currentUser.Name, selected.Title, stock))
 	fmt.Printf("\n✅ Stok %s berhasil diubah menjadi %d\n\n", selected.Title, stock)
 }
 
@@ -296,6 +300,7 @@ func (m *StaffMenu) deleteBook(ctx context.Context) {
 		fmt.Printf("\n❌ Gagal menghapus buku: %v\n\n", err)
 		return
 	}
+	go m.activityController.Log(context.Background(), "Delete Book", fmt.Sprintf("%s menghapus buku %s", m.currentUser.Name, selected.Title))
 	fmt.Printf("\n✅ %s berhasil dihapus\n\n", selected.Title)
 }
 
@@ -330,6 +335,7 @@ func (m *StaffMenu) addAuthor(ctx context.Context) {
 		fmt.Printf("\n❌ Gagal menambah penulis: %v\n\n", err)
 		return
 	}
+	go m.activityController.Log(context.Background(), "Add Author", fmt.Sprintf("%s menambahkan penulis %s", m.currentUser.Name, name))
 	fmt.Printf("\n✅ Penulis berhasil ditambahkan\n\n")
 }
 
@@ -346,4 +352,26 @@ func (m *StaffMenu) listAuthors(ctx context.Context) {
 		t.Append([]any{a.ID, a.Name, a.BirthDate, a.Nationality})
 	}
 	t.Render()
+	fmt.Println()
+}
+
+func (m *StaffMenu) showActivityLogs(ctx context.Context) {
+	logs, err := m.activityController.GetAll(ctx)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal mengambil log aktivitas: %v\n\n", err)
+		return
+	}
+
+	if len(logs) == 0 {
+		fmt.Printf("\n📭 Belum ada aktivitas tercatat\n\n")
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "Key", "Description", "Date"})
+	for _, l := range logs {
+		t.Append([]any{l.ID, l.Key, l.Description, l.Date.Format("2006-01-02 15:04:05")})
+	}
+	t.Render()
+	fmt.Println()
 }
