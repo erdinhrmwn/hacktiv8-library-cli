@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"time"
 	"fmt"
 	"os"
 	"strconv"
@@ -237,13 +238,19 @@ func (m *VisitorMenu) showMyLoans(ctx context.Context) {
 	}
 
 	t := tablewriter.NewWriter(os.Stdout)
-	t.Header([]string{"ID", "Judul Buku", "Tgl Pinjam", "Due Date"})
+	t.Header([]string{"ID", "Judul Buku", "Tgl Pinjam", "Due Date", "Status"})
+	now := time.Now()
 	for _, l := range loans {
 		bookTitle := "-"
 		if l.Book != nil {
 			bookTitle = l.Book.Title
 		}
-		t.Append([]any{l.ID, bookTitle, l.BorrowDate.Format("2006-01-02"), l.DueDate.Format("2006-01-02")})
+		status := "Tepat waktu"
+		if now.After(l.DueDate) {
+			daysLate := int(now.Sub(l.DueDate).Hours() / 24)
+			status = fmt.Sprintf("Terlambat %d hari", daysLate)
+		}
+		t.Append([]any{l.ID, bookTitle, l.BorrowDate.Format("2006-01-02"), l.DueDate.Format("2006-01-02"), status})
 	}
 	t.Render()
 	fmt.Println()
@@ -264,12 +271,7 @@ func (m *VisitorMenu) showMyInvoices(ctx context.Context) {
 	t := tablewriter.NewWriter(os.Stdout)
 	t.Header([]string{"ID", "Judul Buku", "Denda", "Tgl Terbit", "Status"})
 	for _, i := range invoices {
-		bookTitle := "-"
-		loan, _ := m.loanController.GetLoanByID(ctx, i.LoanID)
-		if loan != nil && loan.Book != nil {
-			bookTitle = loan.Book.Title
-		}
-		t.Append([]any{i.ID, bookTitle, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
+		t.Append([]any{i.ID, i.BookTitle, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
 	}
 	t.Render()
 	fmt.Println()

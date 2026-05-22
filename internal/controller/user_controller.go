@@ -17,6 +17,13 @@ func NewUserController(userService *service.UserService) *UserController {
 	return &UserController{userService: userService}
 }
 
+func (c *UserController) GetByID(ctx context.Context, id int) (*model.User, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("ID user tidak valid")
+	}
+	return c.userService.GetUserByID(ctx, id)
+}
+
 func (c *UserController) GetByRole(ctx context.Context, role string) ([]model.User, error) {
 	if role != "staff" && role != "visitor" {
 		return nil, fmt.Errorf("role tidak valid")

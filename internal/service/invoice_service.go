@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
 )
 
@@ -16,13 +15,13 @@ func NewInvoiceService(invoiceRepository *repository.InvoiceRepository) *Invoice
 	return &InvoiceService{invoiceRepository: invoiceRepository}
 }
 
-func (s *InvoiceService) GetUnpaidByUserID(ctx context.Context, userID int) ([]model.Invoice, error) {
+func (s *InvoiceService) GetUnpaidByUserID(ctx context.Context, userID int) ([]repository.InvoiceDetail, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("ID user tidak valid")
 	}
 	return s.invoiceRepository.GetUnpaidInvoicesByUserID(ctx, userID)
 }
 
-func (s *InvoiceService) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
-	return s.invoiceRepository.GetUnpaidInvoices(ctx)
+func (s *InvoiceService) GetAllInvoices(ctx context.Context) ([]repository.InvoiceDetail, error) {
+	return s.invoiceRepository.GetAllInvoices(ctx)
 }
