@@ -3,11 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"math/rand/v2"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/utils"
 )
 
 type UserRepository struct {
@@ -19,48 +16,35 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (r *UserRepository) GetUserByID(ctx context.Context, id int) (*model.User, error) {
-	role := "staff"
-	if id%2 == 0 {
-		role = "visitor"
-	}
-
-	hashedPassword, err := utils.HashPassword("password")
+	rows, err := r.db.QueryContext(ctx, `SELECT * FROM users WHERE id = ?`, id)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	user := &model.User{
-		ID:       id,
-		Name:     "User 1",
-		Email:    fmt.Sprintf("%s%d@library.com", role, id),
-		Password: hashedPassword,
-		Role:     role,
+	var user model.User
+	if rows.Next() {
+		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role); err != nil {
+			return nil, err
+		}
 	}
-
-	return user, nil
+	return &user, rows.Err()
 }
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	id := rand.IntN(100)
-	role := "staff"
-	if len(email)%2 == 0 {
-		role = "visitor"
-	}
-
-	hashedPassword, err := utils.HashPassword("password")
+	rows, err := r.db.QueryContext(ctx, `SELECT * FROM users WHERE email = ?`, email)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	user := &model.User{
-		ID:       id,
-		Name:     fmt.Sprintf("User %d", id),
-		Email:    email,
-		Password: hashedPassword,
-		Role:     role,
+	var user model.User
+	if rows.Next() {
+		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role); err != nil {
+			return nil, err
+		}
 	}
-
-	return user, nil
+	return &user, rows.Err()
 }
 
 func (r *UserRepository) GetUsersByRole(ctx context.Context, role string) ([]model.User, error) {
