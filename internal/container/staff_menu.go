@@ -687,9 +687,9 @@ func (m *StaffMenu) showTopUsersByFines(ctx context.Context) {
 
 	fmt.Println("\n👤 Top 5 User Denda Terbanyak:")
 	t := tablewriter.NewWriter(os.Stdout)
-	t.Header([]string{"ID", "Nama", "Total Denda", "Buku Dipinjam"})
+	t.Header([]string{"ID", "Nama", "Total Denda"})
 	for _, u := range users {
-		t.Append([]any{u.UserID, u.Name, fmt.Sprintf("Rp%.0f", u.TotalFine), fmt.Sprintf("%dx", u.TotalBorrows)})
+		t.Append([]any{u.UserID, u.Name, fmt.Sprintf("Rp%.0f", u.TotalFine)})
 	}
 	t.Render()
 	fmt.Println()
