@@ -3,21 +3,17 @@ package controller
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
-	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/service"
-	"github.com/olekukonko/tablewriter"
 )
 
 type LoanController struct {
-	loanService    *service.LoanService
-	loanRepository *repository.LoanRepository
+	loanService *service.LoanService
 }
 
-func NewLoanController(loanService *service.LoanService, loanRepository *repository.LoanRepository) *LoanController {
-	return &LoanController{loanService: loanService, loanRepository: loanRepository}
+func NewLoanController(loanService *service.LoanService) *LoanController {
+	return &LoanController{loanService: loanService}
 }
 
 func (c *LoanController) BorrowBook(ctx context.Context, visitorID, staffID, bookID int) error {
@@ -48,22 +44,9 @@ func (c *LoanController) GetLoanByID(ctx context.Context, id int) (*model.Loan, 
 	if id <= 0 {
 		return nil, fmt.Errorf("loan ID tidak valid")
 	}
-	return c.loanRepository.GetLoanByID(ctx, id)
+	return c.loanService.GetLoanByID(ctx, id)
 }
 
 func (c *LoanController) GetAll(ctx context.Context) ([]model.Loan, error) {
-	loans, err := c.loanRepository.GetAllLoans(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return loans, nil
-}
-
-func RenderLoanTable(data [][]string) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.Header([]string{"ID", "Visitor", "Book", "Borrow", "Due", "Status"})
-	for _, row := range data {
-		table.Append([]string{row[0], row[1], row[2], row[3], row[4], row[5]})
-	}
-	table.Render()
+	return c.loanService.GetAllLoans(ctx)
 }

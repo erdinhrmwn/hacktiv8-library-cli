@@ -18,11 +18,11 @@ build: tidy
 
 test:
 	@echo "🧪 Running tests..."
-	@go test ./... -v -count=1
+	@go test ./tests/ -v -count=1
 
 test-cover:
 	@echo "🧪 Running tests with coverage..."
-	@go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out
+	@go test ./tests/ -coverprofile=coverage.out && go tool cover -html=coverage.out
 
 ## ── Quality ──────────────────────────────────────────────────
 
