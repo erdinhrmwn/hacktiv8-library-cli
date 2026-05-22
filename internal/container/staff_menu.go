@@ -372,6 +372,8 @@ func (m *StaffMenu) listAuthors(ctx context.Context) {
 }
 
 func (m *StaffMenu) showActivityLogs(ctx context.Context) {
+	const limit = 25
+
 	logs, err := m.activityController.GetAll(ctx)
 	if err != nil {
 		fmt.Printf("\n❌ Gagal mengambil log aktivitas: %v\n\n", err)
@@ -381,6 +383,12 @@ func (m *StaffMenu) showActivityLogs(ctx context.Context) {
 	if len(logs) == 0 {
 		fmt.Printf("\n📭 Belum ada aktivitas tercatat\n\n")
 		return
+	}
+
+	if len(logs) > limit {
+		total := len(logs)
+		logs = logs[total-limit:]
+		fmt.Printf("\n📋 Menampilkan %d log terakhir (total: %d):\n", limit, total)
 	}
 
 	t := tablewriter.NewWriter(os.Stdout)
