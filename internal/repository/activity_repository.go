@@ -26,7 +26,7 @@ func (r *ActivityRepository) GetAll(ctx context.Context) ([]model.ActivityLog, e
 	var logs []model.ActivityLog
 	for rows.Next() {
 		var l model.ActivityLog
-		if err := rows.Scan(&l.ID, &l.Key, &l.Description, &l.Date); err != nil {
+		if err := rows.Scan(&l.ID, &l.Title, &l.Description, &l.Date); err != nil {
 			return nil, err
 		}
 		logs = append(logs, l)
@@ -40,7 +40,7 @@ func (r *ActivityRepository) GetAll(ctx context.Context) ([]model.ActivityLog, e
 
 func (r *ActivityRepository) Log(ctx context.Context, key, description string) error {
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO activity_logs (key, description, date) VALUES (?, ?, ?)`,
+		`INSERT INTO activity_logs (title, description, date) VALUES (?, ?, ?)`,
 		key, description, time.Now())
 	return err
 }

@@ -101,7 +101,7 @@ CREATE TABLE payments (
 -- ------------------------------------------------------------
 CREATE TABLE activity_logs (
     id          INT          NOT NULL AUTO_INCREMENT,
-    `key`       VARCHAR(100) NOT NULL,
+    title       VARCHAR(100) NOT NULL,
     description TEXT         NOT NULL,
     date        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
