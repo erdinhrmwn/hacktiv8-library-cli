@@ -30,3 +30,7 @@ func (s *InvoiceService) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice
 func (s *InvoiceService) GetAllInvoices(ctx context.Context) ([]model.Invoice, error) {
 	return s.invoiceRepository.GetAllInvoices(ctx)
 }
+
+func (s *InvoiceService) GetAllInvoicesWithDetails(ctx context.Context) ([]repository.InvoiceDetail, error) {
+	return s.invoiceRepository.GetAllInvoicesWithDetails(ctx)
+}

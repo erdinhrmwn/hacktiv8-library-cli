@@ -649,7 +649,7 @@ func (m *StaffMenu) showMostBorrowedBooks(ctx context.Context) {
 func (m *StaffMenu) showTotalFines(ctx context.Context) {
 	fmt.Println("\n📋 Semua Invoice:")
 
-	invoices, err := m.invoiceController.GetAllInvoices(ctx)
+	invoices, err := m.invoiceController.GetAllInvoicesWithDetails(ctx)
 	if err != nil {
 		fmt.Printf("\n❌ Gagal ambil data: %v\n\n", err)
 		return
@@ -659,15 +659,7 @@ func (m *StaffMenu) showTotalFines(ctx context.Context) {
 		t := tablewriter.NewWriter(os.Stdout)
 		t.Header([]string{"ID", "User", "Buku", "Denda", "Status"})
 		for _, inv := range invoices {
-			userName := "-"
-			bookTitle := "-"
-			if user, _ := m.userController.GetByID(ctx, inv.UserID); user != nil {
-				userName = user.Name
-			}
-			if loan, _ := m.loanController.GetLoanByID(ctx, inv.LoanID); loan != nil && loan.Book != nil {
-				bookTitle = loan.Book.Title
-			}
-			t.Append([]any{inv.ID, userName, bookTitle, fmt.Sprintf("Rp%.0f", inv.Amount), inv.Status})
+			t.Append([]any{inv.ID, inv.UserName, inv.BookTitle, fmt.Sprintf("Rp%.0f", inv.Amount), inv.Status})
 		}
 		t.Render()
 	} else {

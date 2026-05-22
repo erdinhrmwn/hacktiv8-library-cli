@@ -8,6 +8,15 @@ import (
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
 )
 
+type InvoiceDetail struct {
+	ID        int
+	UserName  string
+	BookTitle string
+	Amount    float64
+	Status    string
+	IssueDate time.Time
+}
+
 type InvoiceRepository struct {
 	db *sql.DB
 }
@@ -80,6 +89,30 @@ func (r *InvoiceRepository) MarkPaid(ctx context.Context, id int) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE invoices SET status = 'paid' WHERE id = ?`, id)
 	return err
+}
+
+func (r *InvoiceRepository) GetAllInvoicesWithDetails(ctx context.Context) ([]InvoiceDetail, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT i.id, u.name, b.title, i.amount, i.status, i.issue_date
+		FROM invoices i
+		JOIN users u ON u.id = i.user_id
+		JOIN loans l ON l.id = i.loan_id
+		JOIN books b ON b.id = l.book_id
+		ORDER BY i.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []InvoiceDetail
+	for rows.Next() {
+		var d InvoiceDetail
+		if err := rows.Scan(&d.ID, &d.UserName, &d.BookTitle, &d.Amount, &d.Status, &d.IssueDate); err != nil {
+			return nil, err
+		}
+		result = append(result, d)
+	}
+	return result, rows.Err()
 }
 
 func (r *InvoiceRepository) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
