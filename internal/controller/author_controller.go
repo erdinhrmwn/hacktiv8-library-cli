@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/service"
@@ -37,7 +38,7 @@ func (c *AuthorController) SearchAuthor(ctx context.Context, query string) ([]mo
 
 type AddAuthorInput struct {
 	Name        string
-	BirthDate   string
+	BirthDate   time.Time
 	Nationality string
 	Bio         string
 }
@@ -59,7 +60,7 @@ func (c *AuthorController) AddAuthor(ctx context.Context, input AddAuthorInput) 
 type UpdateAuthorInput struct {
 	ID          int
 	Name        string
-	BirthDate   string
+	BirthDate   time.Time
 	Nationality string
 	Bio         string
 }

@@ -86,6 +86,8 @@ func (s *UserService) UpdateUser(ctx context.Context, user *model.User) error {
 		return fmt.Errorf("user tidak ditemukan")
 	}
 
+	user.Password = existing.Password
+
 	return s.userRepository.UpdateUser(ctx, user)
 }
 

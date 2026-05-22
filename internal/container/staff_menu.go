@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"time"
 	"os"
 	"strconv"
 
@@ -316,8 +317,13 @@ func (m *StaffMenu) addAuthor(ctx context.Context) {
 		return
 	}
 
-	birthDate, err := utils.AskInput("BirthDate")
+	birthDateStr, err := utils.AskInput("BirthDate (YYYY-MM-DD)")
 	if err != nil {
+		return
+	}
+	birthDate, err := time.Parse("2006-01-02", birthDateStr)
+	if err != nil {
+		fmt.Printf("\n❌ Format tanggal salah (YYYY-MM-DD)\n\n")
 		return
 	}
 
@@ -355,7 +361,7 @@ func (m *StaffMenu) listAuthors(ctx context.Context) {
 	t := tablewriter.NewWriter(os.Stdout)
 	t.Header([]string{"ID", "Name", "BirthDate", "Nationality"})
 	for _, a := range authors {
-		t.Append([]any{a.ID, a.Name, a.BirthDate, a.Nationality})
+		t.Append([]any{a.ID, a.Name, a.BirthDate.Format("2006-01-02"), a.Nationality})
 	}
 	t.Render()
 	fmt.Println()
@@ -459,7 +465,15 @@ func (m *StaffMenu) returnBook(ctx context.Context) {
 
 	loanLabels := make([]string, len(activeLoans))
 	for i, l := range activeLoans {
-		loanLabels[i] = fmt.Sprintf("#%d - Visitor:%d Buku:%d Due:%s", l.ID, l.VisitorID, l.BookID, l.DueDate.Format("2006-01-02"))
+		bookTitle := "-"
+		visitorName := "-"
+		if l.Book != nil {
+			bookTitle = l.Book.Title
+		}
+		if l.Visitor != nil {
+			visitorName = l.Visitor.Name
+		}
+		loanLabels[i] = fmt.Sprintf("#%d - %s - %s (Due:%s)", l.ID, visitorName, bookTitle, l.DueDate.Format("2006-01-02"))
 	}
 	idx, _, err := utils.SelectInput("Pilih Peminjaman", loanLabels)
 	if err != nil {

@@ -237,9 +237,13 @@ func (m *VisitorMenu) showMyLoans(ctx context.Context) {
 	}
 
 	t := tablewriter.NewWriter(os.Stdout)
-	t.Header([]string{"ID", "Book ID", "Borrow", "Due"})
+	t.Header([]string{"ID", "Judul Buku", "Tgl Pinjam", "Due Date"})
 	for _, l := range loans {
-		t.Append([]any{l.ID, l.BookID, l.BorrowDate.Format("2006-01-02"), l.DueDate.Format("2006-01-02")})
+		bookTitle := "-"
+		if l.Book != nil {
+			bookTitle = l.Book.Title
+		}
+		t.Append([]any{l.ID, bookTitle, l.BorrowDate.Format("2006-01-02"), l.DueDate.Format("2006-01-02")})
 	}
 	t.Render()
 	fmt.Println()
@@ -258,9 +262,14 @@ func (m *VisitorMenu) showMyInvoices(ctx context.Context) {
 	}
 
 	t := tablewriter.NewWriter(os.Stdout)
-	t.Header([]string{"ID", "Amount", "Issue Date", "Status"})
+	t.Header([]string{"ID", "Judul Buku", "Denda", "Tgl Terbit", "Status"})
 	for _, i := range invoices {
-		t.Append([]any{i.ID, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
+		bookTitle := "-"
+		loan, _ := m.loanController.GetLoanByID(ctx, i.LoanID)
+		if loan != nil && loan.Book != nil {
+			bookTitle = loan.Book.Title
+		}
+		t.Append([]any{i.ID, bookTitle, fmt.Sprintf("Rp%.0f", i.Amount), i.IssueDate.Format("2006-01-02"), i.Status})
 	}
 	t.Render()
 	fmt.Println()

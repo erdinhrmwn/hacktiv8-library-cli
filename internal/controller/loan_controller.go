@@ -44,6 +44,13 @@ func (c *LoanController) GetActiveByVisitorID(ctx context.Context, visitorID int
 	return c.loanService.GetActiveByVisitorID(ctx, visitorID)
 }
 
+func (c *LoanController) GetLoanByID(ctx context.Context, id int) (*model.Loan, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("loan ID tidak valid")
+	}
+	return c.loanRepository.GetLoanByID(ctx, id)
+}
+
 func (c *LoanController) GetAll(ctx context.Context) ([]model.Loan, error) {
 	loans, err := c.loanRepository.GetAllLoans(ctx)
 	if err != nil {
