@@ -649,9 +649,17 @@ func (m *StaffMenu) showTotalFines(ctx context.Context) {
 
 	if len(invoices) > 0 {
 		t := tablewriter.NewWriter(os.Stdout)
-		t.Header([]string{"ID", "User ID", "Loan ID", "Amount", "Status"})
-		for _, i := range invoices {
-			t.Append([]any{i.ID, i.UserID, i.LoanID, fmt.Sprintf("Rp%.0f", i.Amount), i.Status})
+		t.Header([]string{"ID", "User", "Buku", "Denda", "Status"})
+		for _, inv := range invoices {
+			userName := "-"
+			bookTitle := "-"
+			if user, _ := m.userController.GetByID(ctx, inv.UserID); user != nil {
+				userName = user.Name
+			}
+			if loan, _ := m.loanController.GetLoanByID(ctx, inv.LoanID); loan != nil && loan.Book != nil {
+				bookTitle = loan.Book.Title
+			}
+			t.Append([]any{inv.ID, userName, bookTitle, fmt.Sprintf("Rp%.0f", inv.Amount), inv.Status})
 		}
 		t.Render()
 	} else {
