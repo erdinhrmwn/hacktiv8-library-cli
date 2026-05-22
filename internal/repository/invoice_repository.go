@@ -117,17 +117,20 @@ func (r *InvoiceRepository) GetTotalPaidFines(ctx context.Context) (float64, err
 }
 
 type UserFine struct {
-	UserID    int
-	Name      string
-	TotalFine float64
+	UserID       int
+	Name         string
+	TotalFine    float64
+	TotalBorrows int
 }
 
 func (r *InvoiceRepository) GetTopUsersByFines(ctx context.Context) ([]UserFine, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT u.id, u.name, COALESCE(SUM(i.amount), 0) as total_fine
+		SELECT u.id, u.name,
+		       COALESCE(SUM(i.amount), 0) as total_fine,
+		       COUNT(l.id) as total_borrows
 		FROM users u
-		JOIN invoices i ON i.user_id = u.id
-		WHERE i.status = 'paid'
+		JOIN invoices i ON i.user_id = u.id AND i.status = 'paid'
+		JOIN loans l ON l.visitor_id = u.id
 		GROUP BY u.id, u.name
 		ORDER BY total_fine DESC
 		LIMIT 5`)
@@ -139,7 +142,7 @@ func (r *InvoiceRepository) GetTopUsersByFines(ctx context.Context) ([]UserFine,
 	var results []UserFine
 	for rows.Next() {
 		var uf UserFine
-		if err := rows.Scan(&uf.UserID, &uf.Name, &uf.TotalFine); err != nil {
+		if err := rows.Scan(&uf.UserID, &uf.Name, &uf.TotalFine, &uf.TotalBorrows); err != nil {
 			return nil, err
 		}
 		results = append(results, uf)
