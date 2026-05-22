@@ -15,6 +15,10 @@ func NewInvoiceService(invoiceRepository *repository.InvoiceRepository) *Invoice
 	return &InvoiceService{invoiceRepository: invoiceRepository}
 }
 
+func (s *InvoiceService) GetInvoicesByUserID(ctx context.Context, userID int) ([]repository.InvoiceDetail, error) {
+	return s.invoiceRepository.GetInvoicesByUserID(ctx, userID)
+}
+
 func (s *InvoiceService) GetUnpaidByUserID(ctx context.Context, userID int) ([]repository.InvoiceDetail, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("ID user tidak valid")

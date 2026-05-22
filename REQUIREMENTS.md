@@ -116,7 +116,7 @@ Database terdiri dari **7 tabel** utama:
 │     1.3. Lihat Detail Buku & Penulis (Berdasarkan ID)       │
 │     0.  Kembali ke Dashboard                                │
 │                                                             │
-│  2. Buku yang Sedang Dipinjam (My Loans)                    │
+│  2. Buku yang Dipinjam (My Loans)                    │
 │  3. Cek Tagihan Denda (My Invoices)                         │
 │                                                             │
 │  4. Pengaturan Akun                                         │

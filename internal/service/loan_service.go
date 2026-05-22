@@ -85,6 +85,14 @@ func (s *LoanService) Return(ctx context.Context, loanID int) (*float64, error) 
 	return nil, nil
 }
 
+func (s *LoanService) GetLoansByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
+	loans, err := s.loanRepository.GetLoansByVisitorID(ctx, visitorID)
+	if err != nil {
+		return nil, err
+	}
+	return loans, nil
+}
+
 func (s *LoanService) GetActiveByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
 	loans, err := s.loanRepository.GetActiveLoansByVisitorID(ctx, visitorID)
 	if err != nil {

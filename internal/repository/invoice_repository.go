@@ -65,6 +65,31 @@ func (r *InvoiceRepository) GetInvoiceByID(ctx context.Context, id int) (*model.
 	return &i, rows.Err()
 }
 
+func (r *InvoiceRepository) GetInvoicesByUserID(ctx context.Context, userID int) ([]InvoiceDetail, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT i.id, u.name, b.title, i.amount, i.status, i.issue_date
+		FROM invoices i
+		JOIN users u ON u.id = i.user_id
+		JOIN loans l ON l.id = i.loan_id
+		JOIN books b ON b.id = l.book_id
+		WHERE i.user_id = ?
+		ORDER BY i.id`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []InvoiceDetail
+	for rows.Next() {
+		var d InvoiceDetail
+		if err := rows.Scan(&d.ID, &d.UserName, &d.BookTitle, &d.Amount, &d.Status, &d.IssueDate); err != nil {
+			return nil, err
+		}
+		result = append(result, d)
+	}
+	return result, rows.Err()
+}
+
 func (r *InvoiceRepository) GetUnpaidInvoicesByUserID(ctx context.Context, userID int) ([]InvoiceDetail, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT i.id, u.name, b.title, i.amount, i.status, i.issue_date
