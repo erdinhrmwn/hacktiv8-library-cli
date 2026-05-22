@@ -7,5 +7,6 @@ type Book struct {
 	AuthorID int
 	Genre    string
 	Stock    int
+
 	Author   *Author
 }

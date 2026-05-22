@@ -1,127 +1,97 @@
 package service
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/model"
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
 )
 
-// DendaPerHari adalah denda keterlambatan dalam satuan rupiah per hari.
 const DendaPerHari = 5000.0
 
 type LoanService struct {
-	loanRepo     *repository.LoanRepository
-	bookRepo     *repository.BookRepository
-	invoiceRepo  *repository.InvoiceRepository
-	activityRepo *repository.ActivityRepository
+	loanRepo    *repository.LoanRepository
+	bookRepo    *repository.BookRepository
+	invoiceRepo *repository.InvoiceRepository
 }
 
 func NewLoanService(
 	lr *repository.LoanRepository,
 	br *repository.BookRepository,
 	ir *repository.InvoiceRepository,
-	ar *repository.ActivityRepository,
 ) *LoanService {
 	return &LoanService{
-		loanRepo:     lr,
-		bookRepo:     br,
-		invoiceRepo:  ir,
-		activityRepo: ar,
+		loanRepo:    lr,
+		bookRepo:    br,
+		invoiceRepo: ir,
 	}
 }
 
-// Borrow memproses peminjaman buku oleh visitor yang dilayani staff.
-// F-LOAN-01: kaitkan visitor_id, staff_id, book_id
-// F-LOAN-03: tolak jika stok = 0
-// F-LOAN-04: kurangi stok setelah berhasil
-func (s *LoanService) Borrow(visitorID, staffID, bookID int) error {
-	// 1. Ambil data buku & validasi stok
-	book, err := s.bookRepo.FindByID(bookID)
+func (s *LoanService) Borrow(ctx context.Context, visitorID, staffID, bookID int) error {
+	book, err := s.bookRepo.GetBookByID(ctx, bookID)
 	if err != nil {
 		return err
 	}
-	if book == nil {
-		return errors.New("buku tidak ditemukan")
+	if book.ID == 0 {
+		return fmt.Errorf("buku tidak ditemukan")
 	}
 	if book.Stock <= 0 {
-		return errors.New("stok buku habis, peminjaman ditolak") // F-LOAN-03
+		return fmt.Errorf("stok buku habis, peminjaman ditolak")
 	}
 
-	// 2. Catat peminjaman (borrow_date & due_date diisi oleh repository)
-	if _, err := s.loanRepo.Create(visitorID, staffID, bookID); err != nil {
+	if err := s.loanRepo.Create(ctx, visitorID, staffID, bookID); err != nil {
 		return err
 	}
-
-	// 3. Kurangi stok buku
-	if err := s.bookRepo.DecrementStock(bookID); err != nil { // F-LOAN-04
+	if err := s.bookRepo.DecrementStock(ctx, bookID); err != nil {
 		return err
 	}
-
-	// 4. Audit trail
-	s.activityRepo.Log("Borrow Book", fmt.Sprintf(
-		"Buku '%s' (ID:%d) dipinjam oleh visitor ID:%d", book.Title, bookID, visitorID,
-	))
 
 	return nil
 }
 
-// Return memproses pengembalian buku dan membuat invoice denda jika terlambat.
-// F-RET-01: isi return_date, ubah status → 'returned'
-// F-RET-02: tambah stok buku
-// F-RET-03: buat invoice otomatis jika terlambat
-func (s *LoanService) Return(loanID int) error {
-	// 1. Ambil data loan
-	loan, err := s.loanRepo.FindByID(loanID)
+func (s *LoanService) Return(ctx context.Context, loanID int) (*float64, error) {
+	loan, err := s.loanRepo.GetByID(ctx, loanID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if loan == nil {
-		return errors.New("data peminjaman tidak ditemukan")
+	if loan.ID == 0 {
+		return nil, fmt.Errorf("data peminjaman tidak ditemukan")
 	}
 	if loan.Status == "returned" {
-		return errors.New("buku sudah dikembalikan sebelumnya")
+		return nil, fmt.Errorf("buku sudah dikembalikan")
 	}
 
-	// 2. Tandai sebagai returned
-	if err := s.loanRepo.MarkReturned(loanID); err != nil { // F-RET-01
-		return err
+	if err := s.loanRepo.Return(ctx, loanID); err != nil {
+		return nil, err
+	}
+	if err := s.bookRepo.IncrementStock(ctx, loan.BookID); err != nil {
+		return nil, err
 	}
 
-	// 3. Tambah stok buku
-	if err := s.bookRepo.IncrementStock(loan.BookID); err != nil { // F-RET-02
-		return err
-	}
-
-	// 4. Cek keterlambatan & buat invoice otomatis jika perlu
-	returnDate := time.Now()
-	if returnDate.After(loan.DueDate) { // F-RET-03
-		hariTerlambat := int(returnDate.Sub(loan.DueDate).Hours() / 24)
+	now := time.Now()
+	if now.After(loan.DueDate) {
+		hariTerlambat := int(now.Sub(loan.DueDate).Hours() / 24)
 		if hariTerlambat < 1 {
 			hariTerlambat = 1
 		}
 		denda := float64(hariTerlambat) * DendaPerHari
 
-		if _, err := s.invoiceRepo.Create(loan.VisitorID, loanID, denda); err != nil {
-			return fmt.Errorf("buku berhasil dikembalikan, tapi gagal membuat invoice: %w", err)
+		if err := s.invoiceRepo.Create(ctx, loan.VisitorID, loanID, denda); err != nil {
+			return nil, fmt.Errorf("buku dikembalikan, tapi gagal membuat invoice: %w", err)
 		}
 
-		s.activityRepo.Log("Return Book", fmt.Sprintf(
-			"Buku '%s' dikembalikan terlambat %d hari, denda Rp%.0f",
-			loan.Book.Title, hariTerlambat, denda,
-		))
-		return fmt.Errorf("buku dikembalikan terlambat %d hari — denda Rp%.0f telah dibuat", hariTerlambat, denda)
+		return &denda, fmt.Errorf("buku terlambat %d hari — denda Rp%.0f", hariTerlambat, denda)
 	}
 
-	// Tepat waktu
-	s.activityRepo.Log("Return Book", fmt.Sprintf(
-		"Buku '%s' (loan ID:%d) dikembalikan tepat waktu", loan.Book.Title, loanID,
-	))
-	return nil
+	return nil, nil
 }
 
-// GetActiveLoans mengambil semua peminjaman aktif (dipakai staff).
-func (s *LoanService) GetActiveLoans() ([]interface{}, error) {
-	return nil, nil // akan dipakai controller, di-wrap oleh FindAllActive
+func (s *LoanService) GetActiveByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
+	loans, err := s.loanRepo.GetActiveByVisitorID(ctx, visitorID)
+	if err != nil {
+		return nil, err
+	}
+	return loans, nil
 }
