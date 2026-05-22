@@ -64,7 +64,7 @@ func (m *StaffMenu) Dashboard(ctx context.Context, user *model.User) {
 		case "Pantau Log Aktivitas (Activity Logs)":
 			m.showActivityLogs(ctx)
 		case "Laporan":
-			m.showReport(ctx)
+			m.Report(ctx)
 		case "Logout":
 			return
 		}
@@ -586,43 +586,103 @@ func (m *StaffMenu) listBooks(ctx context.Context) {
 	fmt.Println()
 }
 
-func (m *StaffMenu) showReport(ctx context.Context) {
-	fmt.Println()
-	fmt.Println("══════════════ LAPORAN ══════════════")
+func (m *StaffMenu) Report(ctx context.Context) {
+	for {
+		prompt := promptui.Select{
+			Label: "Laporan",
+			Items: []string{
+				"Buku Paling Banyak Dipinjam",
+				"Total Denda Terbayar",
+				"Top 5 User Denda Terbanyak",
+				"Kembali ke Dashboard",
+			},
+			Size:         10,
+			HideSelected: true,
+		}
+		_, sel, err := prompt.Run()
+		if err != nil {
+			return
+		}
 
+		switch sel {
+		case "Buku Paling Banyak Dipinjam":
+			m.showMostBorrowedBooks(ctx)
+		case "Total Denda Terbayar":
+			m.showTotalFines(ctx)
+		case "Top 5 User Denda Terbanyak":
+			m.showTopUsersByFines(ctx)
+		case "Kembali ke Dashboard":
+			return
+		}
+	}
+}
+
+func (m *StaffMenu) showMostBorrowedBooks(ctx context.Context) {
 	books, err := m.reportController.GetMostBorrowedBooks(ctx)
 	if err != nil {
-		fmt.Printf("❌ Gagal ambil data buku terpopuler: %v\n", err)
-	} else if len(books) > 0 {
-		fmt.Println("\n📚 Buku Paling Banyak Dipinjam:")
+		fmt.Printf("\n❌ Gagal ambil data: %v\n\n", err)
+		return
+	}
+	if len(books) == 0 {
+		fmt.Printf("\n📭 Belum ada data peminjaman\n\n")
+		return
+	}
+
+	fmt.Println("\n📚 Buku Paling Banyak Dipinjam:")
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "Judul", "Dipinjam"})
+	for _, b := range books {
+		t.Append([]any{b.BookID, b.Title, fmt.Sprintf("%dx", b.BorrowCount)})
+	}
+	t.Render()
+	fmt.Println()
+}
+
+func (m *StaffMenu) showTotalFines(ctx context.Context) {
+	fmt.Println("\n📋 Semua Invoice:")
+
+	invoices, err := m.invoiceController.GetAllInvoices(ctx)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal ambil data: %v\n\n", err)
+		return
+	}
+
+	if len(invoices) > 0 {
 		t := tablewriter.NewWriter(os.Stdout)
-		t.Header([]string{"ID", "Judul", "Dipinjam"})
-		for _, b := range books {
-			t.Append([]any{b.BookID, b.Title, fmt.Sprintf("%dx", b.BorrowCount)})
+		t.Header([]string{"ID", "User", "Buku", "Denda", "Status"})
+		for _, inv := range invoices {
+			t.Append([]any{inv.ID, inv.UserName, inv.BookTitle, fmt.Sprintf("Rp%.0f", inv.Amount), inv.Status})
 		}
 		t.Render()
+	} else {
+		fmt.Println("📭 Tidak ada invoice")
 	}
 
 	total, err := m.reportController.GetTotalPaidFines(ctx)
 	if err != nil {
-		fmt.Printf("❌ Gagal ambil total denda: %v\n", err)
-	} else {
-		fmt.Printf("\n💰 Total Denda Terbayar: Rp%.0f\n", total)
+		fmt.Printf("\n❌ Gagal ambil data: %v\n\n", err)
+		return
 	}
+	fmt.Printf("\n💰 Grand Total Denda Terbayar: Rp%.0f\n\n", total)
+}
 
+func (m *StaffMenu) showTopUsersByFines(ctx context.Context) {
 	users, err := m.reportController.GetTopUsersByFines(ctx)
 	if err != nil {
-		fmt.Printf("❌ Gagal ambil data user: %v\n", err)
-	} else if len(users) > 0 {
-		fmt.Println("\n👤 Top 5 User Denda Terbanyak:")
-		tt := tablewriter.NewWriter(os.Stdout)
-		tt.Header([]string{"ID", "Nama", "Total Denda"})
-		for _, u := range users {
-			tt.Append([]any{u.UserID, u.Name, fmt.Sprintf("Rp%.0f", u.TotalFine)})
-		}
-		tt.Render()
+		fmt.Printf("\n❌ Gagal ambil data: %v\n\n", err)
+		return
+	}
+	if len(users) == 0 {
+		fmt.Printf("\n📭 Belum ada data denda\n\n")
+		return
 	}
 
-	fmt.Println("══════════════════════════════════════")
+	fmt.Println("\n👤 Top 5 User Denda Terbanyak:")
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "Nama", "Total Denda"})
+	for _, u := range users {
+		t.Append([]any{u.UserID, u.Name, fmt.Sprintf("Rp%.0f", u.TotalFine)})
+	}
+	t.Render()
 	fmt.Println()
 }
