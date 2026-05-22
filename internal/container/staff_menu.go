@@ -154,6 +154,7 @@ func (m *StaffMenu) Catalog(ctx context.Context) {
 				"Tambah Buku Baru",
 				"Update Stok Buku",
 				"Hapus Buku",
+				"Lihat Daftar Buku",
 				"Tambah Penulis Baru",
 				"Lihat Daftar Penulis",
 				"Kembali ke Dashboard",
@@ -173,6 +174,8 @@ func (m *StaffMenu) Catalog(ctx context.Context) {
 			m.updateBookStock(ctx)
 		case "Hapus Buku":
 			m.deleteBook(ctx)
+		case "Lihat Daftar Buku":
+			m.listBooks(ctx)
 		case "Tambah Penulis Baru":
 			m.addAuthor(ctx)
 		case "Lihat Daftar Penulis":
@@ -542,4 +545,25 @@ func (m *StaffMenu) payInvoice(ctx context.Context) {
 
 	go m.activityController.Log(context.Background(), "Pay Invoice", fmt.Sprintf("%s membayar invoice #%d untuk %s", m.currentUser.Name, selected.ID, selectedVisitor.Name))
 	fmt.Printf("\n✅ Pembayaran berhasil\n\n")
+}
+
+func (m *StaffMenu) listBooks(ctx context.Context) {
+	books, err := m.bookController.GetAllBooks(ctx)
+	if err != nil {
+		fmt.Printf("\n❌ Gagal melihat daftar buku: %v\n\n", err)
+		return
+	}
+
+	if len(books) == 0 {
+		fmt.Printf("\n📭 Belum ada buku terdaftar\n\n")
+		return
+	}
+
+	t := tablewriter.NewWriter(os.Stdout)
+	t.Header([]string{"ID", "ISBN", "Title", "AuthorID", "Genre", "Stock"})
+	for _, b := range books {
+		t.Append([]any{b.ID, b.ISBN, b.Title, b.AuthorID, b.Genre, b.Stock})
+	}
+	t.Render()
+	fmt.Println()
 }
