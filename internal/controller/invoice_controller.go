@@ -26,3 +26,7 @@ func (c *InvoiceController) GetUnpaidByUserID(ctx context.Context, userID int) (
 func (c *InvoiceController) GetUnpaidInvoices(ctx context.Context) ([]model.Invoice, error) {
 	return c.invoiceService.GetUnpaidInvoices(ctx)
 }
+
+func (c *InvoiceController) GetAllInvoices(ctx context.Context) ([]model.Invoice, error) {
+	return c.invoiceService.GetAllInvoices(ctx)
+}
