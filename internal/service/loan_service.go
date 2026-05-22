@@ -9,7 +9,7 @@ import (
 	"github.com/erdinhrmwn/hacktiv8-library-cli/internal/repository"
 )
 
-const DendaPerHari = 5000.0
+const FinePerDay = 5000.0
 
 type LoanService struct {
 	loanRepo    *repository.LoanRepository
@@ -72,17 +72,17 @@ func (s *LoanService) Return(ctx context.Context, loanID int) (*float64, error) 
 
 	now := time.Now()
 	if now.After(loan.DueDate) {
-		hariTerlambat := int(now.Sub(loan.DueDate).Hours() / 24)
-		if hariTerlambat < 1 {
-			hariTerlambat = 1
+		daysLate := int(now.Sub(loan.DueDate).Hours() / 24)
+		if daysLate < 1 {
+			daysLate = 1
 		}
-		denda := float64(hariTerlambat) * DendaPerHari
+		fine := float64(daysLate) * FinePerDay
 
-		if err := s.invoiceRepo.Create(ctx, loan.VisitorID, loanID, denda); err != nil {
+		if err := s.invoiceRepo.Create(ctx, loan.VisitorID, loanID, fine); err != nil {
 			return nil, fmt.Errorf("buku dikembalikan, tapi gagal membuat invoice: %w", err)
 		}
 
-		return &denda, fmt.Errorf("buku terlambat %d hari — denda Rp%.0f", hariTerlambat, denda)
+		return &fine, fmt.Errorf("buku terlambat %d hari — denda Rp%.0f", daysLate, fine)
 	}
 
 	return nil, nil
