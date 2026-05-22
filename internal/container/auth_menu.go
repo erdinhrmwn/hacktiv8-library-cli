@@ -11,8 +11,8 @@ import (
 )
 
 type AuthMenu struct {
-	authController      *controller.AuthController
-	activityController  *controller.ActivityController
+	authController     *controller.AuthController
+	activityController *controller.ActivityController
 }
 
 func (m *AuthMenu) Main(ctx context.Context) *model.User {

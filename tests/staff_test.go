@@ -20,6 +20,7 @@ func TestStaffFlow(t *testing.T) {
 	loanRepo := repository.NewLoanRepository(testDB)
 	invoiceRepo := repository.NewInvoiceRepository(testDB)
 	paymentRepo := repository.NewPaymentRepository(testDB)
+	activityRepo := repository.NewActivityRepository(testDB)
 
 	// services
 	authService := service.NewAuthService(userRepo)
@@ -28,6 +29,8 @@ func TestStaffFlow(t *testing.T) {
 	loanService := service.NewLoanService(loanRepo, bookRepo, invoiceRepo)
 	invoiceService := service.NewInvoiceService(invoiceRepo)
 	paymentService := service.NewPaymentService(paymentRepo, invoiceRepo)
+	userService := service.NewUserService(userRepo)
+	activityService := service.NewActivityService(activityRepo)
 
 	// controllers
 	authCtrl := controller.NewAuthController(authService)
@@ -36,11 +39,13 @@ func TestStaffFlow(t *testing.T) {
 	loanCtrl := controller.NewLoanController(loanService)
 	invoiceCtrl := controller.NewInvoiceController(invoiceService)
 	paymentCtrl := controller.NewPaymentController(paymentService)
+	userCtrl := controller.NewUserController(userService)
+	activityCtrl := controller.NewActivityController(activityService)
 
 	var staffID, visitorID int
 
-	// Login as staff
-	t.Run("Login as staff", func(t *testing.T) {
+	// Login
+	t.Run("Login", func(t *testing.T) {
 		user, err := authCtrl.Login(ctx, "staff@test.com", "password")
 		if err != nil {
 			t.Fatal("gagal login:", err)
@@ -54,7 +59,7 @@ func TestStaffFlow(t *testing.T) {
 		visitorID = visitor.ID
 	})
 
-	// Lihat daftar author
+	// List authors
 	t.Run("List authors", func(t *testing.T) {
 		authors, err := authorCtrl.GetAllAuthors(ctx)
 		if err != nil {
@@ -90,7 +95,7 @@ func TestStaffFlow(t *testing.T) {
 		}
 	})
 
-	// Lihat daftar book
+	// List books
 	t.Run("List books", func(t *testing.T) {
 		books, err := bookCtrl.GetAllBooks(ctx)
 		if err != nil {
@@ -141,14 +146,14 @@ func TestStaffFlow(t *testing.T) {
 		}
 		loanID = loans[0].ID
 
-		// Cek stok berkurang
+		// check stock
 		book, _ := bookCtrl.GetBookByID(ctx, newBookID)
 		if book.Stock != 1 {
 			t.Fatal("stok harus 1, got:", book.Stock)
 		}
 	})
 
-	// Return book before due date - no invoice
+	// Return before due
 	t.Run("Return book before due date (no invoice)", func(t *testing.T) {
 		fine, err := loanCtrl.ReturnBook(ctx, loanID)
 		if err != nil {
@@ -158,16 +163,16 @@ func TestStaffFlow(t *testing.T) {
 			t.Fatal("tidak seharusnya ada denda")
 		}
 
-		// Cek stok kembali
+		// check stock
 		book, _ := bookCtrl.GetBookByID(ctx, newBookID)
 		if book.Stock != 2 {
 			t.Fatal("stok harus 2, got:", book.Stock)
 		}
 	})
 
-	// Return after due date - invoice must be created
+	// Return after due
 	t.Run("Return book after due date (invoice created)", func(t *testing.T) {
-		// Borrow book first
+		// borrow
 		err := loanCtrl.BorrowBook(ctx, visitorID, staffID, newBookID)
 		if err != nil {
 			t.Fatal("gagal pinjam:", err)
@@ -178,7 +183,7 @@ func TestStaffFlow(t *testing.T) {
 			t.Fatal("tidak ada loan aktif")
 		}
 
-		// Set due date ke kemarin manual via DB
+		// force late
 		testDB.Exec("UPDATE loans SET due_date = DATE_SUB(NOW(), INTERVAL 3 DAY) WHERE id = ?", loans[0].ID)
 
 		fine, err := loanCtrl.ReturnBook(ctx, loans[0].ID)
@@ -189,7 +194,7 @@ func TestStaffFlow(t *testing.T) {
 			t.Fatal("seharusnya ada denda")
 		}
 
-		// Cek invoice
+		// check invoice
 		invoices, _ := invoiceCtrl.GetUnpaidByUserID(ctx, visitorID)
 		if len(invoices) == 0 {
 			t.Fatal("seharusnya ada invoice")
@@ -208,10 +213,90 @@ func TestStaffFlow(t *testing.T) {
 			t.Fatal("gagal bayar:", err)
 		}
 
-		// Cek invoice sudah paid
+		// check invoice sudah paid
 		remaining, _ := invoiceCtrl.GetUnpaidByUserID(ctx, visitorID)
 		if len(remaining) != 0 {
 			t.Fatal("invoice seharusnya sudah paid")
+		}
+	})
+
+	// Register visitor
+	t.Run("Register visitor", func(t *testing.T) {
+		err := userCtrl.Create(ctx, controller.CreateUserInput{
+			Name:     "New Visitor",
+			Email:    "new@test.com",
+			Password: "password",
+			Role:     "visitor",
+		})
+		if err != nil {
+			t.Fatal("gagal daftar visitor:", err)
+		}
+
+		users, _ := userCtrl.GetByRole(ctx, "visitor")
+		found := false
+		for _, u := range users {
+			if u.Email == "new@test.com" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatal("visitor baru tidak ditemukan")
+		}
+	})
+
+	// List visitors
+	t.Run("List visitors", func(t *testing.T) {
+		users, err := userCtrl.GetByRole(ctx, "visitor")
+		if err != nil {
+			t.Fatal("gagal lihat visitor:", err)
+		}
+		if len(users) < 2 {
+			t.Fatal("seharusnya >= 2 visitor, got:", len(users))
+		}
+	})
+
+	// Update book stock
+	t.Run("Update stock", func(t *testing.T) {
+		books, _ := bookCtrl.GetAllBooks(ctx)
+		err := bookCtrl.UpdateBook(ctx, controller.UpdateBookInput{
+			ID:       books[0].ID,
+			ISBN:     books[0].ISBN,
+			Title:    books[0].Title,
+			Genre:    books[0].Genre,
+			AuthorID: books[0].AuthorID,
+			Stock:    10,
+		})
+		if err != nil {
+			t.Fatal("gagal update stok:", err)
+		}
+
+		book, _ := bookCtrl.GetBookByID(ctx, books[0].ID)
+		if book.Stock != 10 {
+			t.Fatal("stok harus 10, got:", book.Stock)
+		}
+	})
+
+	// Delete book
+	t.Run("Delete book", func(t *testing.T) {
+		books, _ := bookCtrl.GetAllBooks(ctx)
+		// delete book with no loans
+		for _, b := range books {
+			if b.Title == "Book Two" {
+				err := bookCtrl.DeleteBook(ctx, b.ID)
+				if err != nil {
+					t.Fatal("gagal hapus buku:", err)
+				}
+				return
+			}
+		}
+	})
+
+	// Activity logs
+	t.Run("Activity logs", func(t *testing.T) {
+		_, err := activityCtrl.GetAll(ctx)
+		if err != nil {
+			t.Fatal("gagal ambil log:", err)
 		}
 	})
 }
