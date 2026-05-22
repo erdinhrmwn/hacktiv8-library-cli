@@ -51,6 +51,7 @@ func New(db *sql.DB) *Container {
 	return &Container{
 		AuthMenu: &AuthMenu{
 			authController:     authController,
+			userController:     userController,
 			activityController: activityController,
 		},
 		VisitorMenu: &VisitorMenu{
