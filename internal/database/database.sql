@@ -1,65 +1,55 @@
-
-CREATE DATABASE library;
-
-USE library;
-
 -- ------------------------------------------------------------
 -- 1. users
 -- ------------------------------------------------------------
 CREATE TABLE users (
-    id         INT          NOT NULL AUTO_INCREMENT,
-    name       VARCHAR(100) NOT NULL,
-    email      VARCHAR(150) NOT NULL UNIQUE,
-    password   VARCHAR(255) NOT NULL,          -- bcrypt hash (F-AUTH-02)
-    role       ENUM('staff','visitor') NOT NULL DEFAULT 'visitor',  -- F-AUTH-04
-    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-                            ON UPDATE CURRENT_TIMESTAMP,
+    id       INT          NOT NULL AUTO_INCREMENT,
+    name     VARCHAR(100) NOT NULL,
+    email    VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,   
+    role     VARCHAR(20)  NOT NULL,   
     PRIMARY KEY (id)
 );
 
 -- ------------------------------------------------------------
--- 2. authors  
+-- 2. authors  (F-CAT-01)
 -- ------------------------------------------------------------
 CREATE TABLE authors (
-    id         INT          NOT NULL AUTO_INCREMENT,
-    name       VARCHAR(150) NOT NULL,
-    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-                            ON UPDATE CURRENT_TIMESTAMP,
+    id          INT          NOT NULL AUTO_INCREMENT,
+    name        VARCHAR(150) NOT NULL,
+    birth_date  DATE,
+    nationality VARCHAR(100),
+    bio         TEXT,
     PRIMARY KEY (id)
 );
 
 -- ------------------------------------------------------------
--- 3. books 
+-- 3. books  (F-CAT-02, F-CAT-03)
 -- ------------------------------------------------------------
 CREATE TABLE books (
-    id         INT          NOT NULL AUTO_INCREMENT,
-    isbn       VARCHAR(20)  NOT NULL UNIQUE,   -- F-CAT-03: isbn harus unik
-    title      VARCHAR(255) NOT NULL,
-    author_id  INT          NOT NULL,           -- F-CAT-03: harus merujuk author valid
-    stock      INT          NOT NULL DEFAULT 0 CHECK (stock >= 0),
-    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-                            ON UPDATE CURRENT_TIMESTAMP,
+    id        INT          NOT NULL AUTO_INCREMENT,
+    isbn      VARCHAR(20)  NOT NULL UNIQUE,
+    title     VARCHAR(255) NOT NULL,
+    author_id INT          NOT NULL,
+    genre     VARCHAR(100) NOT NULL,
+    stock     INT          NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT fk_books_author
         FOREIGN KEY (author_id) REFERENCES authors(id)
-        ON DELETE RESTRICT                      -- Aturan Bisnis: ON DELETE RESTRICT
+        ON DELETE RESTRICT
 );
 
 -- ------------------------------------------------------------
--- 4. loans  
+-- 4. loans  (F-LOAN-01, F-LOAN-02)
 -- ------------------------------------------------------------
 CREATE TABLE loans (
-    id          INT      NOT NULL AUTO_INCREMENT,
-    visitor_id  INT      NOT NULL,
-    staff_id    INT      NOT NULL,
-    book_id     INT      NOT NULL,
-    borrow_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- F-LOAN-02
-    due_date    DATETIME NOT NULL,             -- F-LOAN-02: borrow_date + 7 hari (di-set service)
-    return_date DATETIME,                      -- F-RET-01: NULL = belum dikembalikan
-    status      ENUM('active','returned') NOT NULL DEFAULT 'active',  -- F-RET-01
+    id          INT         NOT NULL AUTO_INCREMENT,
+    visitor_id  INT         NOT NULL,
+    staff_id    INT         NOT NULL,
+    book_id     INT         NOT NULL,
+    borrow_date DATE        NOT NULL,
+    due_date    DATE        NOT NULL,   
+    return_date DATE,                  
+    status      VARCHAR(20) NOT NULL,  
     PRIMARY KEY (id),
     CONSTRAINT fk_loans_visitor
         FOREIGN KEY (visitor_id) REFERENCES users(id)
@@ -73,18 +63,18 @@ CREATE TABLE loans (
 );
 
 -- ------------------------------------------------------------
--- 5. invoices  
+-- 5. invoices  (F-RET-03, F-PAY-01)
 -- ------------------------------------------------------------
 CREATE TABLE invoices (
     id         INT           NOT NULL AUTO_INCREMENT,
-    visitor_id INT           NOT NULL,
-    loan_id    INT           NOT NULL UNIQUE,  -- 1 loan hanya bisa punya 1 invoice
-    amount     DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    status     ENUM('unpaid','paid') NOT NULL DEFAULT 'unpaid',  -- F-PAY-03
-    created_at DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id    INT           NOT NULL,   
+    loan_id    INT           NOT NULL UNIQUE,
+    amount     DECIMAL(10,2) NOT NULL,
+    issue_date DATE          NOT NULL,
+    status     VARCHAR(20),             
     PRIMARY KEY (id),
-    CONSTRAINT fk_invoices_visitor
-        FOREIGN KEY (visitor_id) REFERENCES users(id)
+    CONSTRAINT fk_invoices_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE RESTRICT,
     CONSTRAINT fk_invoices_loan
         FOREIGN KEY (loan_id) REFERENCES loans(id)
@@ -92,14 +82,14 @@ CREATE TABLE invoices (
 );
 
 -- ------------------------------------------------------------
--- 6. payments  
+-- 6. payments  (F-PAY-02, F-PAY-03)
 -- ------------------------------------------------------------
 CREATE TABLE payments (
     id         INT           NOT NULL AUTO_INCREMENT,
     invoice_id INT           NOT NULL,
-    amount_paid DECIMAL(10,2) NOT NULL,        -- F-PAY-02: amount_paid
-    method     ENUM('cash','transfer') NOT NULL, -- F-PAY-02: method cash/transfer
-    paid_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    amount     DECIMAL(10,2) NOT NULL,
+    date       DATE          NOT NULL,
+    method     VARCHAR(50)   NOT NULL,   
     PRIMARY KEY (id),
     CONSTRAINT fk_payments_invoice
         FOREIGN KEY (invoice_id) REFERENCES invoices(id)
@@ -107,13 +97,13 @@ CREATE TABLE payments (
 );
 
 -- ------------------------------------------------------------
--- 7. activity_logs  
+-- 7. activity_logs  (F-LOG-01, F-LOG-02)
 -- ------------------------------------------------------------
 CREATE TABLE activity_logs (
     id          INT          NOT NULL AUTO_INCREMENT,
-    `key`       VARCHAR(100) NOT NULL,   -- F-LOG-02: jenis aksi (Login, Add Book, dst)
-    description TEXT         NOT NULL,   -- F-LOG-02: detail aksi
-    date        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- F-LOG-02
+    `key`       VARCHAR(100) NOT NULL,
+    description TEXT         NOT NULL,
+    date        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
