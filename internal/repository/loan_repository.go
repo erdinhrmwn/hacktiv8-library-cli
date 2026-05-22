@@ -93,6 +93,35 @@ func (r *LoanRepository) ReturnLoan(ctx context.Context, loanID int) error {
 	return err
 }
 
+func (r *LoanRepository) GetLoansByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT l.id, l.visitor_id, l.staff_id, l.book_id,
+		       l.borrow_date, l.due_date, l.return_date, l.status,
+		       b.title
+		FROM loans l
+		JOIN books b ON b.id = l.book_id
+		WHERE l.visitor_id = ?
+		ORDER BY l.status DESC, l.borrow_date DESC`, visitorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var loans []model.Loan
+	for rows.Next() {
+		var l model.Loan
+		var book model.Book
+		if err := rows.Scan(&l.ID, &l.VisitorID, &l.StaffID, &l.BookID,
+			&l.BorrowDate, &l.DueDate, &l.ReturnDate, &l.Status,
+			&book.Title); err != nil {
+			return nil, err
+		}
+		l.Book = &book
+		loans = append(loans, l)
+	}
+	return loans, rows.Err()
+}
+
 func (r *LoanRepository) GetActiveLoansByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT l.id, l.visitor_id, l.staff_id, l.book_id,

@@ -32,7 +32,7 @@ func (m *VisitorMenu) Dashboard(ctx context.Context, user *model.User) {
 			Label: "VISITOR DASHBOARD",
 			Items: []string{
 				"Cari & Lihat Katalog Buku",
-				"Buku yang Sedang Dipinjam (My Loans)",
+				"Buku yang Dipinjam (My Loans)",
 				"Cek Tagihan Denda (My Invoices)",
 				"Pengaturan Akun",
 				"Logout",
@@ -48,7 +48,7 @@ func (m *VisitorMenu) Dashboard(ctx context.Context, user *model.User) {
 		switch sel {
 		case "Cari & Lihat Katalog Buku":
 			m.Catalog(ctx)
-		case "Buku yang Sedang Dipinjam (My Loans)":
+		case "Buku yang Dipinjam (My Loans)":
 			m.showMyLoans(ctx)
 		case "Cek Tagihan Denda (My Invoices)":
 			m.showMyInvoices(ctx)
@@ -226,7 +226,7 @@ func (m *VisitorMenu) changePassword(ctx context.Context) {
 }
 
 func (m *VisitorMenu) showMyLoans(ctx context.Context) {
-	loans, err := m.loanController.GetActiveByVisitorID(ctx, m.currentUser.ID)
+	loans, err := m.loanController.GetLoansByVisitorID(ctx, m.currentUser.ID)
 	if err != nil {
 		fmt.Printf("\n❌ Gagal mengambil daftar peminjaman: %v\n\n", err)
 		return
@@ -245,10 +245,18 @@ func (m *VisitorMenu) showMyLoans(ctx context.Context) {
 		if l.Book != nil {
 			bookTitle = l.Book.Title
 		}
-		status := "Tepat waktu"
+		status := "Aktif - Tepat waktu"
 		if now.After(l.DueDate) {
 			daysLate := int(now.Sub(l.DueDate).Hours() / 24)
-			status = fmt.Sprintf("Terlambat %d hari", daysLate)
+			status = fmt.Sprintf("Aktif - Terlambat %d hari", daysLate)
+		}
+		if l.Status == "returned" {
+			if l.ReturnDate != nil && l.ReturnDate.After(l.DueDate) {
+				daysLate := int(l.ReturnDate.Sub(l.DueDate).Hours() / 24)
+				status = fmt.Sprintf("Dikembalikan (terlambat %d hari)", daysLate)
+			} else {
+				status = "Dikembalikan (tepat waktu)"
+			}
 		}
 		t.Append([]any{l.ID, bookTitle, l.BorrowDate.Format("2006-01-02"), l.DueDate.Format("2006-01-02"), status})
 	}

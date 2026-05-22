@@ -36,6 +36,13 @@ func (c *LoanController) ReturnBook(ctx context.Context, loanID int) (*float64, 
 	return c.loanService.Return(ctx, loanID)
 }
 
+func (c *LoanController) GetLoansByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
+	if visitorID <= 0 {
+		return nil, fmt.Errorf("visitor ID tidak valid")
+	}
+	return c.loanService.GetLoansByVisitorID(ctx, visitorID)
+}
+
 func (c *LoanController) GetActiveByVisitorID(ctx context.Context, visitorID int) ([]model.Loan, error) {
 	return c.loanService.GetActiveByVisitorID(ctx, visitorID)
 }
