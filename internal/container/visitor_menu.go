@@ -265,7 +265,7 @@ func (m *VisitorMenu) showMyLoans(ctx context.Context) {
 }
 
 func (m *VisitorMenu) showMyInvoices(ctx context.Context) {
-	invoices, err := m.invoiceController.GetUnpaidByUserID(ctx, m.currentUser.ID)
+	invoices, err := m.invoiceController.GetInvoicesByUserID(ctx, m.currentUser.ID)
 	if err != nil {
 		fmt.Printf("\n❌ Gagal mengambil daftar tagihan: %v\n\n", err)
 		return
